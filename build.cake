@@ -25,7 +25,7 @@ Task("Build")
         .WithProperty("FileVersion", fileVersion)
         .WithProperty("InformationalVersion", infoVersion);
 
-    MSBuild("Mono.ApiTools.NuGetDiff.sln", settings);
+    MSBuild("Mono.ApiTools.MSBuildTasks.sln", settings);
 });
 
 Task("Pack")
@@ -39,19 +39,11 @@ Task("Pack")
         .WithProperty("FileVersion", fileVersion)
         .WithProperty("InformationalVersion", infoVersion)
         .WithProperty("PackageOutputPath", MakeAbsolute((DirectoryPath)"./output/").FullPath)
+        .WithProperty("PackageVersion", prerelease ? previewVersion : packageVersion)
         .WithTarget("Pack");
 
-    if (prerelease) {
-        settings.WithProperty("PackageVersion", previewVersion);
 
-        MSBuild("Mono.ApiTools.NuGetDiff/Mono.ApiTools.NuGetDiff.csproj", settings);
-        MSBuild("api-tools/api-tools.csproj", settings);
-    } else {
-        settings.WithProperty("PackageVersion", packageVersion);
-
-        MSBuild("Mono.ApiTools.NuGetDiff/Mono.ApiTools.NuGetDiff.csproj", settings);
-        MSBuild("api-tools/api-tools.csproj", settings);
-    }
+    MSBuild("Mono.ApiTools.MSBuildTasks/Mono.ApiTools.MSBuildTasks.csproj", settings);
 });
 
 Task("Test")
@@ -59,15 +51,9 @@ Task("Test")
     .Does(() =>
 {
     Information("Running unit tests...");
-    DotNetCoreTest("Mono.ApiTools.NuGetDiff.Tests/Mono.ApiTools.NuGetDiff.Tests.csproj", new DotNetCoreTestSettings {
+    DotNetCoreTest("Mono.ApiTools.MSBuildTasks.Tests/Mono.ApiTools.MSBuildTasks.Tests.csproj", new DotNetCoreTestSettings {
         Logger = "trx"
     });
-
-    Information("Running app tests...");
-    var app = $"api-tools/bin/{configuration}/netcoreapp3.1/api-tools.dll";
-    var id = "Mono.ApiTools.NuGetDiff";
-    var version = prerelease ? previewVersion : packageVersion;
-    DotNetCoreExecute(app, $"nuget-diff ./output/{id}.{version}.nupkg --latest --cache=externals --output=diff");
 });
 
 Task("Default")
