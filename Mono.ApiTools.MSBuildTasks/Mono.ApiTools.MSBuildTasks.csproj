@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<LangVersion>9</LangVersion>
+		<IncludeBuildOutput>False</IncludeBuildOutput>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<PackageId>Mono.ApiTools.MSBuildTasks</PackageId>
+		<Title>Mono.ApiTools.MSBuildTasks</Title>
+		<Summary>MSBuild tasks to help with adjusting .NET assemblies during a build.</Summary>
+		<Description>MSBuild tasks to help with adjusting .NET assemblies during a build.</Description>
+		<Authors>Matthew Leibowitz</Authors>
+		<Owners>Matthew Leibowitz</Owners>
+		<Copyright>© Matthew Leibowitz.</Copyright>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+		<RepositoryUrl>https://github.com/mattleibow/Mono.ApiTools.MSBuildTasks</RepositoryUrl>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageProjectUrl>https://github.com/mattleibow/Mono.ApiTools.MSBuildTasks</PackageProjectUrl>
+		<PackageReleaseNotes>See: https://github.com/mattleibow/Mono.ApiTools.MSBuildTasks/releases/v$(PackageVersion)</PackageReleaseNotes>
+		<NeutralLanguage>en</NeutralLanguage>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Mono.Cecil" Version="0.11.4" GeneratePathProperty="true" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.Build.Framework" Version="16.7.0" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.Build.Utilities.Core" Version="16.7.0" PrivateAssets="all" />
+	</ItemGroup>
+
+	<ItemGroup>
+	</ItemGroup>
+
+	<ItemGroup>
+		<_ItemToPack Include="$(PkgMono_Cecil)\lib\netstandard2.0\Mono.Cecil.dll" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="$(TargetPath)" Visible="False" Pack="True" PackagePath="buildTransitive" />
+		<None Include="$(TargetDir)$(TargetName).pdb" Visible="False" Pack="True" PackagePath="buildTransitive" />
+		<None Include="@(_ItemToPack)" Visible="False" Pack="True" PackagePath="buildTransitive" CopyToOutputDirectory="PreserveNewest" />
+		<None Include="Mono.ApiTools.MSBuildTasks.targets" Pack="True" PackagePath="buildTransitive" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+
+</Project>
