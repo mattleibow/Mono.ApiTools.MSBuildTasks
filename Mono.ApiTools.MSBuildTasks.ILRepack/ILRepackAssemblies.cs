@@ -60,7 +60,7 @@ public class ILRepackAssemblies : Task
 
 	public bool UnionMerge { get; set; }
 
-	public Version? Version { get; set; }
+	public string? Version { get; set; }
 
 	public bool XmlDocumentation { get; set; }
 
@@ -122,7 +122,7 @@ public class ILRepackAssemblies : Task
 				// TargetPlatformDirectory
 				// TargetPlatformVersion
 				UnionMerge = UnionMerge,
-				Version = Version,
+				Version = Version is not null ? new Version(Version) : null,
 				XmlDocumentation = XmlDocumentation
 			};
 
