@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net5.0</TargetFramework>
+		<TargetFramework>net6.0</TargetFramework>
 		<IsPackable>false</IsPackable>
 	</PropertyGroup>
 
@@ -26,6 +26,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Mono.ApiTools.MSBuildTasks\Mono.ApiTools.MSBuildTasks.csproj" />
+		<ProjectReference Include="..\Mono.ApiTools.MSBuildTasks.ILRepack\Mono.ApiTools.MSBuildTasks.ILRepack.csproj" />
 	</ItemGroup>
 
 </Project>

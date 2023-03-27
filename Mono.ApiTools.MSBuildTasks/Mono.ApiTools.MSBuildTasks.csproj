@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFramework>netstandard2.0</TargetFramework>
 		<Nullable>enable</Nullable>
-		<LangVersion>9</LangVersion>
+		<LangVersion>10</LangVersion>
 		<IncludeBuildOutput>False</IncludeBuildOutput>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	</PropertyGroup>
@@ -31,9 +31,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\Mono.ApiTools.MSBuildTasks.ILRepack\Mono.ApiTools.MSBuildTasks.ILRepack.csproj" PrivateAssets="all" />
 	</ItemGroup>
 
 	<ItemGroup>
+		<_ItemToPack Include="..\Mono.ApiTools.MSBuildTasks.ILRepack\bin\$(Configuration)\netstandard2.0\Mono.ApiTools.MSBuildTasks.ILRepack.dll" />
+		<_ItemToPack Include="..\Mono.ApiTools.MSBuildTasks.ILRepack\bin\$(Configuration)\netstandard2.0\Mono.ApiTools.MSBuildTasks.ILRepack.pdb" />
 		<_ItemToPack Include="$(PkgMono_Cecil)\lib\netstandard2.0\Mono.Cecil.dll" />
 	</ItemGroup>
 
@@ -43,5 +46,7 @@
 		<None Include="@(_ItemToPack)" Visible="False" Pack="True" PackagePath="buildTransitive" CopyToOutputDirectory="PreserveNewest" />
 		<None Include="Mono.ApiTools.MSBuildTasks.targets" Pack="True" PackagePath="buildTransitive" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
+
+	<Import Project="..\ILRepack.targets" />
 
 </Project>

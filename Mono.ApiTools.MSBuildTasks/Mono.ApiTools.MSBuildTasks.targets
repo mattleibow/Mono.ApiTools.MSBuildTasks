@@ -3,10 +3,15 @@
 
 	<PropertyGroup>
 		<_MonoApiToolsMSBuildTasksTaskAssemblyName>$(MSBuildThisFileDirectory)\Mono.ApiTools.MSBuildTasks.dll</_MonoApiToolsMSBuildTasksTaskAssemblyName>
+		<_MonoApiToolsMSBuildTasksILRepackTaskAssemblyName>$(MSBuildThisFileDirectory)\Mono.ApiTools.MSBuildTasks.ILRepack.dll</_MonoApiToolsMSBuildTasksILRepackTaskAssemblyName>
 	</PropertyGroup>
 
 	<UsingTask
 		AssemblyFile="$(_MonoApiToolsMSBuildTasksTaskAssemblyName)"
 		TaskName="Mono.ApiTools.MSBuildTasks.AdjustReferencedAssemblyVersion" />
+
+	<UsingTask
+		AssemblyFile="$(_MonoApiToolsMSBuildTasksILRepackTaskAssemblyName)"
+		TaskName="Mono.ApiTools.MSBuildTasks.ILRepackAssemblies" />
 
 </Project>

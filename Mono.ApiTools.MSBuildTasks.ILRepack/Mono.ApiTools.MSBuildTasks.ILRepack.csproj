@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<LangVersion>10</LangVersion>
+		<IsPackable>false</IsPackable>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<PackageId>Mono.ApiTools.MSBuildTasks.ILRepack</PackageId>
+		<Title>Mono.ApiTools.MSBuildTasks.ILRepack</Title>
+		<Summary>MSBuild tasks to help with adjusting .NET assemblies during a build (using ILRepack - https://github.com/gluck/il-repack).</Summary>
+		<Description>MSBuild tasks to help with adjusting .NET assemblies during a build (using ILRepack - https://github.com/gluck/il-repack).</Description>
+		<Authors>Matthew Leibowitz</Authors>
+		<Owners>Matthew Leibowitz</Owners>
+		<Copyright>© Matthew Leibowitz.</Copyright>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+		<RepositoryUrl>https://github.com/mattleibow/Mono.ApiTools.MSBuildTasks</RepositoryUrl>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageProjectUrl>https://github.com/mattleibow/Mono.ApiTools.MSBuildTasks</PackageProjectUrl>
+		<PackageReleaseNotes>See: https://github.com/mattleibow/Mono.ApiTools.MSBuildTasks/releases/v$(PackageVersion)</PackageReleaseNotes>
+		<NeutralLanguage>en</NeutralLanguage>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Build.Framework" Version="16.7.0" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.Build.Utilities.Core" Version="16.7.0" PrivateAssets="all" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ILRepackInputAssemblies Include="$(PkgILRepack)\tools\ILRepack.exe" />
+		<Reference Include="$(PkgILRepack)\tools\ILRepack.exe" />
+	</ItemGroup>
+
+	<Import Project="..\ILRepack.targets" />
+
+</Project>
