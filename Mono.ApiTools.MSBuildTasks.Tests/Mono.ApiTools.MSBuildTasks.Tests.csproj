@@ -1,27 +1,31 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net5.0</TargetFramework>
+		<TargetFramework>net8.0</TargetFramework>
 		<IsPackable>false</IsPackable>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+		<PackageReference Include="xunit" Version="2.7.0" />
+		<PackageReference Include="xunit.runner.visualstudio" Version="2.5.7">
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="coverlet.collector" Version="6.0.1">
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="Mono.Cecil" Version="0.11.5" />
+		<PackageReference Include="Microsoft.Build.Framework" Version="17.9.5" />
+		<PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.9.5" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- nugets for testing - exact versions -->
 		<PackageReference Include="SkiaSharp" Version="2.88.0-preview.127" />
 		<PackageReference Include="SkiaSharp.HarfBuzz" Version="2.88.0-preview.127" />
 		<PackageReference Include="Svg.Skia" Version="0.5.7.1" />
-		<PackageReference Include="xunit" Version="2.4.1" />
-		<PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
-			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-			<PrivateAssets>all</PrivateAssets>
-		</PackageReference>
-		<PackageReference Include="coverlet.collector" Version="3.0.2">
-			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-			<PrivateAssets>all</PrivateAssets>
-		</PackageReference>
-		<PackageReference Include="Mono.Cecil" Version="0.11.4" />
-		<PackageReference Include="Microsoft.Build.Framework" Version="16.7.0" />
-		<PackageReference Include="Microsoft.Build.Utilities.Core" Version="16.7.0" />
 	</ItemGroup>
 
 	<ItemGroup>

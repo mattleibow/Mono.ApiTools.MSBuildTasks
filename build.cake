@@ -17,33 +17,36 @@ var previewVersion  = packageVersion + "-preview." + previewNumber;
 Task("Build")
     .Does(() =>
 {
-    var settings = new MSBuildSettings()
-        .SetConfiguration(configuration)
-        .SetVerbosity(Verbosity.Minimal)
-        .WithRestore()
-        .WithProperty("Version", assemblyVersion)
-        .WithProperty("FileVersion", fileVersion)
-        .WithProperty("InformationalVersion", infoVersion);
+    var settings = new DotNetBuildSettings
+    {
+        Verbosity = DotNetVerbosity.Minimal,
+        MSBuildSettings = new DotNetMSBuildSettings()
+            .SetConfiguration(configuration)
+            .WithProperty("Version", assemblyVersion)
+            .WithProperty("FileVersion", fileVersion)
+            .WithProperty("InformationalVersion", infoVersion)
+    };
 
-    MSBuild("Mono.ApiTools.MSBuildTasks.sln", settings);
+    DotNetBuild("Mono.ApiTools.MSBuildTasks.sln", settings);
 });
 
 Task("Pack")
     .IsDependentOn("Build")
     .Does(() =>
 {
-    var settings = new MSBuildSettings()
-        .SetConfiguration(configuration)
-        .SetVerbosity(Verbosity.Minimal)
-        .WithProperty("Version", assemblyVersion)
-        .WithProperty("FileVersion", fileVersion)
-        .WithProperty("InformationalVersion", infoVersion)
-        .WithProperty("PackageOutputPath", MakeAbsolute((DirectoryPath)"./output/").FullPath)
-        .WithProperty("PackageVersion", prerelease ? previewVersion : packageVersion)
-        .WithTarget("Pack");
+    var settings = new DotNetPackSettings
+    {
+        Verbosity = DotNetVerbosity.Minimal,
+        MSBuildSettings = new DotNetMSBuildSettings()
+            .SetConfiguration(configuration)
+            .WithProperty("Version", assemblyVersion)
+            .WithProperty("FileVersion", fileVersion)
+            .WithProperty("InformationalVersion", infoVersion)
+            .WithProperty("PackageOutputPath", MakeAbsolute((DirectoryPath)"./output/").FullPath)
+            .WithProperty("PackageVersion", prerelease ? previewVersion : packageVersion)
+    };
 
-
-    MSBuild("Mono.ApiTools.MSBuildTasks/Mono.ApiTools.MSBuildTasks.csproj", settings);
+    DotNetPack("Mono.ApiTools.MSBuildTasks/Mono.ApiTools.MSBuildTasks.csproj", settings);
 });
 
 Task("Test")
@@ -51,8 +54,9 @@ Task("Test")
     .Does(() =>
 {
     Information("Running unit tests...");
-    DotNetCoreTest("Mono.ApiTools.MSBuildTasks.Tests/Mono.ApiTools.MSBuildTasks.Tests.csproj", new DotNetCoreTestSettings {
-        Logger = "trx"
+    DotNetTest("Mono.ApiTools.MSBuildTasks.Tests/Mono.ApiTools.MSBuildTasks.Tests.csproj", new DotNetTestSettings
+    {
+        Loggers = new [] { "trx" }
     });
 });
 

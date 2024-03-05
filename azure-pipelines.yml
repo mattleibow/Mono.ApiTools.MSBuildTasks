@@ -2,23 +2,23 @@ trigger:
   - main
 
 pool:
-  name: 'Hosted Windows 2019 with VS2019'
+  name: Azure Pipelines
+  vmImage: windows-2022
 
 variables:
-  BASE_VERSION: 0.1.0
+  BASE_VERSION: 0.2.0
   BUILD_NUMBER: $[counter(format('{0}_{1}', variables['BASE_VERSION'], variables['Build.SourceBranch']), 1)]
   PACKAGE_VERSION: $(BASE_VERSION).$(BUILD_NUMBER)
   CONFIGURATION: 'Release'
   BUILD_PRERELEASE: false
-  CAKE_VERSION: 0.35.0
-  DOTNET_CORE_VERSION: 5.x
+  DOTNET_CORE_VERSION: 8.x
 
 steps:
   - task: UseDotNet@2
     inputs:
       version: $(DOTNET_CORE_VERSION)
       performMultiLevelLookup: true
-  - powershell: dotnet tool install -g cake.tool --version $(CAKE_VERSION)
+  - powershell: dotnet tool restore
   - powershell: dotnet cake --configuration="$(CONFIGURATION)" --packageVersion="$(PACKAGE_VERSION)" --prerelease="$(BUILD_PRERELEASE)"
   - task: PublishBuildArtifacts@1
     inputs:
