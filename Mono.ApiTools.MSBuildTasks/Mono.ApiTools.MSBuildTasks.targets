@@ -11,6 +11,6 @@
 
 	<UsingTask
 		AssemblyFile="$(_MonoApiToolsMSBuildTasksTaskAssemblyName)"
-		TaskName="Mono.ApiTools.MSBuildTasks.RemoveObsoleteMembers" />
+		TaskName="Mono.ApiTools.MSBuildTasks.RemoveObsoleteSymbols" />
 
 </Project>
