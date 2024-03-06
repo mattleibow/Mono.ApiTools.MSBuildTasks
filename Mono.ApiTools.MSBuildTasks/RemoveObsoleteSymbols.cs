@@ -23,15 +23,13 @@ namespace Mono.ApiTools.MSBuildTasks
 			resolver.RemoveSearchDirectory("bin");
 			resolver.AddSearchDirectory(Path.GetDirectoryName(Assembly.ItemSpec));
 
-			using var mainAssembly = AssemblyDefinition.ReadAssembly(Assembly.ItemSpec, new ReaderParameters
+			using var module = ModuleDefinition.ReadModule(Assembly.ItemSpec, new ReaderParameters
 			{
 				InMemory = true,
 				AssemblyResolver = resolver
 			});
 
-			var module = mainAssembly.MainModule;
-
-			Log.LogMessage($"Scanning assembly {mainAssembly.Name} for obsolete types...");
+			Log.LogMessage($"Scanning assembly {module.Name} for obsolete types...");
 
 			foreach (var type in module.Types.ToArray())
 			{
@@ -39,8 +37,11 @@ namespace Mono.ApiTools.MSBuildTasks
 			}
 
 			var dest = (OutputAssembly ?? Assembly).ItemSpec;
-			Log.LogMessage($"Saving assembly {mainAssembly.Name} to {dest}...");
-			mainAssembly.Write(dest);
+			Log.LogMessage($"Saving assembly {module.Name} to {dest}...");
+			module.Write(dest, new WriterParameters
+			{
+				DeterministicMvid = true,
+			});
 
 			return !Log.HasLoggedErrors;
 		}
