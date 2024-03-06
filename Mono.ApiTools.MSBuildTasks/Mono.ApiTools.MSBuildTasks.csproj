@@ -43,6 +43,6 @@
 		<None Include="Mono.ApiTools.MSBuildTasks.targets" Pack="True" PackagePath="buildTransitive" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
-	<Import Project="..\ILRepack.targets" />
+	<Import Project="..\ILRepack.targets" Condition="'$(Configuration)' == 'Release'" />
 
 </Project>
