@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Project>
+
+	<ItemGroup>
+		<PackageReference Include="ILRepack" Version="2.0.18" GeneratePathProperty="true" PrivateAssets="all" />
+	</ItemGroup>
+
+	<Target
+		Name="_ILRepack"
+		Inputs="$(MSBuildAllProjects);$(IntermediateOutputPath)$(AssemblyName).dll;@(ILRepackInputAssemblies)"
+		Outputs="$(IntermediateOutputPath)ILRepacker.stamp" >
+		<ItemGroup>
+			<_NetstandardPath Include="@(ReferencePath->'%(RootDir)%(Directory)')" Condition="'%(FileName)%(Extension)' == 'netstandard.dll'" />
+		</ItemGroup>
+		<PropertyGroup>
+			<_NetstandardDir>@(_NetstandardPath)</_NetstandardDir>
+			<_ILRepackArgs>/out:&quot;$(MSBuildProjectDirectory)\$(IntermediateOutputPath)$(AssemblyName).dll&quot;</_ILRepackArgs>
+			<_ILRepackArgs>$(_ILRepackArgs) /internalize</_ILRepackArgs>
+			<_ILRepackArgs>$(_ILRepackArgs) &quot;$(MSBuildProjectDirectory)\$(IntermediateOutputPath)$(AssemblyName).dll&quot;</_ILRepackArgs>
+			<_ILRepackArgs>$(_ILRepackArgs) @(ILRepackInputAssemblies->'"%(Identity)"', ' ')</_ILRepackArgs>
+			<_ILRepackArgs>$(_ILRepackArgs) /lib:&quot;$(_NetstandardDir.TrimEnd('\'))&quot;</_ILRepackArgs>
+		</PropertyGroup>
+		<Exec Command="&quot;$(ILRepack)&quot; $(_ILRepackArgs)" WorkingDirectory="$(TargetDir)" />
+		<Touch Files="$(IntermediateOutputPath)ILRepacker.stamp" AlwaysCreate="True" />
+		<ItemGroup>
+			<FileWrites Include="$(IntermediateOutputPath)ILRepacker.stamp" />
+		</ItemGroup>
+	</Target>
+
+	<Target Name="_ILRepackAfterBuild" BeforeTargets="CopyFilesToOutputDirectory" DependsOnTargets="_ILRepack" />
+
+</Project>

@@ -34,14 +34,15 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<_ItemToPack Include="$(PkgMono_Cecil)\lib\netstandard2.0\Mono.Cecil.dll" />
+		<ILRepackInputAssemblies Include="$(PkgMono_Cecil)\lib\netstandard2.0\Mono.Cecil.dll" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<None Include="$(TargetPath)" Visible="False" Pack="True" PackagePath="buildTransitive" />
 		<None Include="$(TargetDir)$(TargetName).pdb" Visible="False" Pack="True" PackagePath="buildTransitive" />
-		<None Include="@(_ItemToPack)" Visible="False" Pack="True" PackagePath="buildTransitive" CopyToOutputDirectory="PreserveNewest" />
 		<None Include="Mono.ApiTools.MSBuildTasks.targets" Pack="True" PackagePath="buildTransitive" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
+
+	<Import Project="..\ILRepack.targets" />
 
 </Project>
