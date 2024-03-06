@@ -96,7 +96,7 @@ namespace Mono.ApiTools.MSBuildTasks
 				}
 			}
 
-			foreach (var nestedType in type.NestedTypes)
+			foreach (var nestedType in type.NestedTypes.ToArray())
 			{
 				ProcessType(nestedType);
 			}
