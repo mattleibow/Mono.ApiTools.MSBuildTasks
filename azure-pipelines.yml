@@ -15,16 +15,19 @@ variables:
 
 steps:
   - task: UseDotNet@2
+    displayName: Install .NET
     inputs:
       version: $(DOTNET_CORE_VERSION)
       performMultiLevelLookup: true
-  - powershell: dotnet tool restore
-  - powershell: dotnet cake --configuration="$(CONFIGURATION)" --packageVersion="$(PACKAGE_VERSION)" --prerelease="$(BUILD_PRERELEASE)"
-  - task: PublishBuildArtifacts@1
-    inputs:
-      pathToPublish: output
-      artifactName: nuget
+  - pwsh: dotnet tool restore
+    displayName: Restore .NET tools
+  - pwsh: dotnet cake --configuration="$(CONFIGURATION)" --packageVersion="$(PACKAGE_VERSION)" --prerelease="$(BUILD_PRERELEASE)"
+    displayName: Build, pack and test everything
+  - publish: output
+    artifact: nuget
+    displayName: Upload artifacts
   - task: PublishTestResults@2
+    displayName: Upload test results
     condition: always()
     inputs:
       testResultsFormat: VSTest
