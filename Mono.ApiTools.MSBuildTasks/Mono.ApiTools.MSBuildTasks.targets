@@ -9,4 +9,8 @@
 		AssemblyFile="$(_MonoApiToolsMSBuildTasksTaskAssemblyName)"
 		TaskName="Mono.ApiTools.MSBuildTasks.AdjustReferencedAssemblyVersion" />
 
+	<UsingTask
+		AssemblyFile="$(_MonoApiToolsMSBuildTasksTaskAssemblyName)"
+		TaskName="Mono.ApiTools.MSBuildTasks.RemoveObsoleteMembers" />
+
 </Project>

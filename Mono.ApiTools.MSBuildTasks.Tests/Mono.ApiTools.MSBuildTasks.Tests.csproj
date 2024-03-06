@@ -23,9 +23,14 @@
 
 	<ItemGroup>
 		<!-- nugets for testing - exact versions -->
-		<PackageReference Include="SkiaSharp" Version="2.88.0-preview.127" />
-		<PackageReference Include="SkiaSharp.HarfBuzz" Version="2.88.0-preview.127" />
+		<PackageReference Include="SkiaSharp" Version="2.88.0-preview.127" NoWarn="NU1903" />
+		<PackageReference Include="SkiaSharp.HarfBuzz" Version="2.88.0-preview.127" NoWarn="NU1903" />
 		<PackageReference Include="Svg.Skia" Version="0.5.7.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- projects used for testing -->
+		<ProjectReference Include="..\Mono.ApiTools.MSBuildTasks.Tests.TestAssembly\Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
