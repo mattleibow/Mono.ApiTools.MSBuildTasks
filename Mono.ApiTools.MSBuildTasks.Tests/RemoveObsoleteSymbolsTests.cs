@@ -12,7 +12,7 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 			{
 				Assembly = new TaskItem(Path.Combine(DestinationDirectory, assembly)),
 				OnlyErrors = onlyErrors,
-				OutputAssembly = new TaskItem(Path.Combine(DestinationDirectory, outputPath)),
+				OutputAssembly = outputPath is null ? null : new TaskItem(Path.Combine(DestinationDirectory, outputPath)),
 				BuildEngine = this,
 			};
 
@@ -106,6 +106,7 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 			var messages = LogMessageEvents
 				.Select(e => e.Message)
 				.Where(m => !m.StartsWith("Scanning assembly"))
+				.Where(m => !m.StartsWith($"Removed {removed.Length} obsolete symbols."))
 				.Where(m => !m.StartsWith("Saving assembly"))
 				.ToArray();
 

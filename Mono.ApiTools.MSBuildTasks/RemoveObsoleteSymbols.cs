@@ -44,14 +44,14 @@ namespace Mono.ApiTools.MSBuildTasks
 
 			Log.LogMessage($"Scanning assembly {mainAssembly.Name} for obsolete types...");
 
-			var removed = false;
+			var removed = 0;
 			foreach (var type in module.Types.ToArray())
 			{
-				removed = ProcessType(type) || removed;
+				removed += ProcessType(type);
 			}
 
 			var outputAssemblyPath = Path.GetFullPath((OutputAssembly ?? Assembly).ItemSpec);
-			if (!removed)
+			if (removed == 0)
 			{
 				Log.LogMessage("No obsolete types found.");
 				if (mainAssemblyPath != outputAssemblyPath)
@@ -62,6 +62,7 @@ namespace Mono.ApiTools.MSBuildTasks
 			}
 			else
 			{
+				Log.LogMessage($"Removed {removed} obsolete symbols.");
 				Log.LogMessage($"Saving assembly {mainAssembly.Name} to {outputAssemblyPath}...");
 				mainAssembly.Write(outputAssemblyPath);
 			}
@@ -69,7 +70,7 @@ namespace Mono.ApiTools.MSBuildTasks
 			return !Log.HasLoggedErrors;
 		}
 
-		private bool ProcessType(TypeDefinition type)
+		private int ProcessType(TypeDefinition type)
 		{
 			if (ShouldRemove(type))
 			{
@@ -80,10 +81,10 @@ namespace Mono.ApiTools.MSBuildTasks
 				else
 					type.DeclaringType.NestedTypes.Remove(type);
 
-				return true;
+				return 1;
 			}
 
-			var removed = false;
+			var removed = 0;
 
 			foreach (var property in type.Properties.ToArray())
 			{
@@ -91,7 +92,7 @@ namespace Mono.ApiTools.MSBuildTasks
 				{
 					Log.LogMessage($"Removing property '{property.FullName}'...");
 					type.Properties.Remove(property);
-					removed = true;
+					removed++;
 				}
 			}
 
@@ -101,6 +102,7 @@ namespace Mono.ApiTools.MSBuildTasks
 				{
 					Log.LogMessage($"Removing method '{method.FullName}'...");
 					type.Methods.Remove(method);
+					removed++;
 				}
 			}
 
@@ -110,7 +112,7 @@ namespace Mono.ApiTools.MSBuildTasks
 				{
 					Log.LogMessage($"Removing event '{evnt.FullName}'...");
 					type.Events.Remove(evnt);
-					removed = true;
+					removed++;
 				}
 			}
 
@@ -120,13 +122,13 @@ namespace Mono.ApiTools.MSBuildTasks
 				{
 					Log.LogMessage($"Removing field '{field.FullName}'...");
 					type.Fields.Remove(field);
-					removed = true;
+					removed++;
 				}
 			}
 
 			foreach (var nestedType in type.NestedTypes.ToArray())
 			{
-				removed = ProcessType(nestedType) || removed;
+				removed += ProcessType(nestedType);
 			}
 
 			return removed;
