@@ -7,11 +7,12 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 {
 	public class RemoveObsoleteSymbolsTests : MSBuildTaskTestFixture<RemoveObsoleteSymbols>
 	{
-		protected RemoveObsoleteSymbols GetNewTask(string assembly, bool onlyErrors = true) =>
+		protected RemoveObsoleteSymbols GetNewTask(string assembly, bool onlyErrors = true, string outputPath = null) =>
 			new()
 			{
 				Assembly = new TaskItem(Path.Combine(DestinationDirectory, assembly)),
 				OnlyErrors = onlyErrors,
+				OutputAssembly = outputPath is null ? null : new TaskItem(Path.Combine(DestinationDirectory, outputPath)),
 				BuildEngine = this,
 			};
 
@@ -105,6 +106,7 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 			var messages = LogMessageEvents
 				.Select(e => e.Message)
 				.Where(m => !m.StartsWith("Scanning assembly"))
+				.Where(m => !m.StartsWith($"Removed {removed.Length} obsolete symbols."))
 				.Where(m => !m.StartsWith("Saving assembly"))
 				.ToArray();
 

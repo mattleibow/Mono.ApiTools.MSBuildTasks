@@ -9,6 +9,15 @@ namespace Mono.ApiTools.MSBuildTasks
 {
 	public class RemoveObsoleteSymbols : Task
 	{
+		// special obsolete messages:
+		// https://github.com/dotnet/roslyn/blob/891584232dc8112f33376e9ee9486051a1014b24/src/Compilers/Core/Portable/MetadataReader/PEModule.cs#L1192-L1193
+
+		private readonly string[] SpecialObsoleteMessages = new[]
+		{
+			"Types with embedded references are not supported in this version of your compiler.",
+			"Constructors of types with required members are not supported in this version of your compiler."
+		};
+
 		[Required]
 		public ITaskItem Assembly { get; set; } = null!;
 
@@ -18,35 +27,50 @@ namespace Mono.ApiTools.MSBuildTasks
 
 		public override bool Execute()
 		{
+			var mainAssemblyPath = Path.GetFullPath(Assembly.ItemSpec);
+
 			using var resolver = new DefaultAssemblyResolver();
 			resolver.RemoveSearchDirectory(".");
 			resolver.RemoveSearchDirectory("bin");
-			resolver.AddSearchDirectory(Path.GetDirectoryName(Assembly.ItemSpec));
+			resolver.AddSearchDirectory(Path.GetDirectoryName(mainAssemblyPath));
 
-			using var module = ModuleDefinition.ReadModule(Assembly.ItemSpec, new ReaderParameters
+			using var mainAssembly = AssemblyDefinition.ReadAssembly(mainAssemblyPath, new ReaderParameters
 			{
 				InMemory = true,
 				AssemblyResolver = resolver
 			});
 
-			Log.LogMessage($"Scanning assembly {module.Name} for obsolete types...");
+			var module = mainAssembly.MainModule;
 
+			Log.LogMessage($"Scanning assembly {mainAssembly.Name} for obsolete types...");
+
+			var removed = 0;
 			foreach (var type in module.Types.ToArray())
 			{
-				ProcessType(type);
+				removed += ProcessType(type);
 			}
 
-			var dest = (OutputAssembly ?? Assembly).ItemSpec;
-			Log.LogMessage($"Saving assembly {module.Name} to {dest}...");
-			module.Write(dest, new WriterParameters
+			var outputAssemblyPath = Path.GetFullPath((OutputAssembly ?? Assembly).ItemSpec);
+			if (removed == 0)
 			{
-				DeterministicMvid = true,
-			});
+				Log.LogMessage("No obsolete types found.");
+				if (mainAssemblyPath != outputAssemblyPath)
+				{
+					Log.LogMessage($"Copying assembly {mainAssembly.Name} to {outputAssemblyPath}...");
+					File.Copy(mainAssemblyPath, outputAssemblyPath, true);
+				}
+			}
+			else
+			{
+				Log.LogMessage($"Removed {removed} obsolete symbols.");
+				Log.LogMessage($"Saving assembly {mainAssembly.Name} to {outputAssemblyPath}...");
+				mainAssembly.Write(outputAssemblyPath);
+			}
 
 			return !Log.HasLoggedErrors;
 		}
 
-		private void ProcessType(TypeDefinition type)
+		private int ProcessType(TypeDefinition type)
 		{
 			if (ShouldRemove(type))
 			{
@@ -57,8 +81,10 @@ namespace Mono.ApiTools.MSBuildTasks
 				else
 					type.DeclaringType.NestedTypes.Remove(type);
 
-				return;
+				return 1;
 			}
+
+			var removed = 0;
 
 			foreach (var property in type.Properties.ToArray())
 			{
@@ -66,6 +92,7 @@ namespace Mono.ApiTools.MSBuildTasks
 				{
 					Log.LogMessage($"Removing property '{property.FullName}'...");
 					type.Properties.Remove(property);
+					removed++;
 				}
 			}
 
@@ -75,6 +102,7 @@ namespace Mono.ApiTools.MSBuildTasks
 				{
 					Log.LogMessage($"Removing method '{method.FullName}'...");
 					type.Methods.Remove(method);
+					removed++;
 				}
 			}
 
@@ -84,6 +112,7 @@ namespace Mono.ApiTools.MSBuildTasks
 				{
 					Log.LogMessage($"Removing event '{evnt.FullName}'...");
 					type.Events.Remove(evnt);
+					removed++;
 				}
 			}
 
@@ -93,13 +122,16 @@ namespace Mono.ApiTools.MSBuildTasks
 				{
 					Log.LogMessage($"Removing field '{field.FullName}'...");
 					type.Fields.Remove(field);
+					removed++;
 				}
 			}
 
 			foreach (var nestedType in type.NestedTypes.ToArray())
 			{
-				ProcessType(nestedType);
+				removed += ProcessType(nestedType);
 			}
+
+			return removed;
 		}
 
 		private static readonly string ObsoleteAttribute = typeof(ObsoleteAttribute).FullName;
@@ -114,7 +146,13 @@ namespace Mono.ApiTools.MSBuildTasks
 				return true;
 
 			if (obs.ConstructorArguments.Count >= 2 && obs.ConstructorArguments[1].Value is bool isError && isError)
-				return true;
+			{
+				if (obs.ConstructorArguments[0].Value is string message)
+				{
+					if (!SpecialObsoleteMessages.Contains(message))
+						return true;
+				}
+			}
 
 			return false;
 		}
