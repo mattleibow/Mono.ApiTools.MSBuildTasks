@@ -6,8 +6,4 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Bad\Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Bad.csproj" />
-	</ItemGroup>
-
 </Project>

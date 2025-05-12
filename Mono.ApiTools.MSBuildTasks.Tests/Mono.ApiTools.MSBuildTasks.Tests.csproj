@@ -31,6 +31,8 @@
 	<ItemGroup>
 		<!-- projects used for testing -->
 		<ProjectReference Include="..\Mono.ApiTools.MSBuildTasks.Tests.TestAssembly\Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.csproj" />
+		<ProjectReference Include="..\Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Bad\Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Bad.csproj" />
+		<ProjectReference Include="..\Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Good\Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Good.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
