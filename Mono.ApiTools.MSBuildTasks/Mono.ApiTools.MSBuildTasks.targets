@@ -13,4 +13,8 @@
 		AssemblyFile="$(_MonoApiToolsMSBuildTasksTaskAssemblyName)"
 		TaskName="Mono.ApiTools.MSBuildTasks.RemoveObsoleteSymbols" />
 
+	<UsingTask
+		AssemblyFile="$(_MonoApiToolsMSBuildTasksTaskAssemblyName)"
+		TaskName="Mono.ApiTools.MSBuildTasks.ReplaceReferencedAssembly" />
+
 </Project>
