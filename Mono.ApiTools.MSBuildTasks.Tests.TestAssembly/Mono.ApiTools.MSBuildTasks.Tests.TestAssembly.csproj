@@ -6,6 +6,13 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.4">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
 	<ItemGroup>
 		<ProjectReference Include="..\Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Bad\Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Bad.csproj" />
 	</ItemGroup>

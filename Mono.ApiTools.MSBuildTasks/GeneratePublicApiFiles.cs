@@ -12,21 +12,35 @@ namespace Mono.ApiTools.MSBuildTasks
 	public class GeneratePublicApiFiles : Task
 	{
 		[Required]
-		public ITaskItem Assembly { get; set; } = null!;
-
-		public ITaskItem? OutputDirectory { get; set; }
-
-		public string ShippedFileName { get; set; } = "PublicAPI.Shipped.txt";
-
-		public string UnshippedFileName { get; set; } = "PublicAPI.Unshipped.txt";
-
-		public bool GenerateShippedFile { get; set; } = true;
-
-		public bool GenerateUnshippedFile { get; set; } = false;
+		public ITaskItem[] Files { get; set; } = null!;
 
 		public override bool Execute()
 		{
-			var assemblyPath = Path.GetFullPath(Assembly.ItemSpec);
+			if (Files == null || Files.Length == 0)
+			{
+				Log.LogError("No files specified.");
+				return false;
+			}
+
+			// Find the assembly file (should be a .dll)
+			var assemblyFile = Files.FirstOrDefault(f => f.ItemSpec.EndsWith(".dll", StringComparison.OrdinalIgnoreCase));
+			if (assemblyFile == null)
+			{
+				Log.LogError("No assembly file (.dll) found in the Files collection.");
+				return false;
+			}
+
+			// Find PublicAPI files
+			var shippedFile = Files.FirstOrDefault(f => Path.GetFileName(f.ItemSpec).Equals("PublicAPI.Shipped.txt", StringComparison.OrdinalIgnoreCase));
+			var unshippedFile = Files.FirstOrDefault(f => Path.GetFileName(f.ItemSpec).Equals("PublicAPI.Unshipped.txt", StringComparison.OrdinalIgnoreCase));
+
+			if (shippedFile == null && unshippedFile == null)
+			{
+				Log.LogError("No PublicAPI.Shipped.txt or PublicAPI.Unshipped.txt files found in the Files collection.");
+				return false;
+			}
+
+			var assemblyPath = Path.GetFullPath(assemblyFile.ItemSpec);
 
 			using var resolver = new DefaultAssemblyResolver();
 			resolver.RemoveSearchDirectory(".");
@@ -43,37 +57,31 @@ namespace Mono.ApiTools.MSBuildTasks
 
 			var currentApis = ExtractPublicApis(assembly);
 
-			var outputDir = OutputDirectory != null ? 
-				Path.GetFullPath(OutputDirectory.ItemSpec) : 
-				Path.GetDirectoryName(assemblyPath);
-
-			var shippedPath = Path.Combine(outputDir, ShippedFileName);
-			var unshippedPath = Path.Combine(outputDir, UnshippedFileName);
-
 			// Read existing shipped APIs if the file exists
 			var shippedApis = new HashSet<string>();
-			if (File.Exists(shippedPath))
+			var shippedHasNullableEnable = false;
+			if (shippedFile != null && File.Exists(shippedFile.ItemSpec))
 			{
-				var existingShipped = File.ReadAllLines(shippedPath)
-					.Where(line => !string.IsNullOrWhiteSpace(line) && !line.StartsWith("*REMOVED*"));
-				foreach (var line in existingShipped)
+				var shippedContent = File.ReadAllText(shippedFile.ItemSpec);
+				shippedHasNullableEnable = shippedContent.StartsWith("#nullable enable");
+				
+				var shippedLines = File.ReadAllLines(shippedFile.ItemSpec)
+					.Where(line => !string.IsNullOrWhiteSpace(line) && 
+					              !line.StartsWith("#nullable") && 
+					              !line.StartsWith("*REMOVED*"));
+				foreach (var line in shippedLines)
 				{
 					shippedApis.Add(line);
 				}
 				Log.LogMessage($"Read {shippedApis.Count} existing APIs from shipped file");
 			}
 
-			if (GenerateShippedFile)
-			{
-				WriteApiFile(currentApis, shippedPath);
-				Log.LogMessage($"Generated shipped API file: {shippedPath}");
-			}
-
-			if (GenerateUnshippedFile)
+			// Generate and write unshipped file if specified
+			if (unshippedFile != null)
 			{
 				var unshippedApis = GenerateUnshippedDiff(currentApis, shippedApis);
-				WriteApiFile(unshippedApis, unshippedPath);
-				Log.LogMessage($"Generated unshipped API file: {unshippedPath} with {unshippedApis.Count} entries");
+				WriteApiFile(unshippedApis, unshippedFile.ItemSpec, shippedHasNullableEnable);
+				Log.LogMessage($"Generated unshipped API file: {unshippedFile.ItemSpec} with {unshippedApis.Count} entries");
 			}
 
 			return !Log.HasLoggedErrors;
@@ -449,7 +457,7 @@ namespace Mono.ApiTools.MSBuildTasks
 			return value.ToString();
 		}
 
-		private void WriteApiFile(List<string> apis, string filePath)
+		private void WriteApiFile(List<string> apis, string filePath, bool includeNullableEnable)
 		{
 			var directory = Path.GetDirectoryName(filePath);
 			if (!Directory.Exists(directory))
@@ -457,7 +465,14 @@ namespace Mono.ApiTools.MSBuildTasks
 				Directory.CreateDirectory(directory);
 			}
 
-			File.WriteAllLines(filePath, apis, Encoding.UTF8);
+			var lines = new List<string>();
+			if (includeNullableEnable)
+			{
+				lines.Add("#nullable enable");
+			}
+			lines.AddRange(apis);
+
+			File.WriteAllLines(filePath, lines, Encoding.UTF8);
 		}
 	}
 }
