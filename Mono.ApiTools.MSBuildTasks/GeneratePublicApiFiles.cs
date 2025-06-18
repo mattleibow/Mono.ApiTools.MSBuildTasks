@@ -41,28 +41,69 @@ namespace Mono.ApiTools.MSBuildTasks
 
 			Log.LogMessage($"Generating public API files for assembly {assembly.Name}...");
 
-			var apis = ExtractPublicApis(assembly);
+			var currentApis = ExtractPublicApis(assembly);
 
 			var outputDir = OutputDirectory != null ? 
 				Path.GetFullPath(OutputDirectory.ItemSpec) : 
 				Path.GetDirectoryName(assemblyPath);
 
+			var shippedPath = Path.Combine(outputDir, ShippedFileName);
+			var unshippedPath = Path.Combine(outputDir, UnshippedFileName);
+
+			// Read existing shipped APIs if the file exists
+			var shippedApis = new HashSet<string>();
+			if (File.Exists(shippedPath))
+			{
+				var existingShipped = File.ReadAllLines(shippedPath)
+					.Where(line => !string.IsNullOrWhiteSpace(line) && !line.StartsWith("*REMOVED*"));
+				foreach (var line in existingShipped)
+				{
+					shippedApis.Add(line);
+				}
+				Log.LogMessage($"Read {shippedApis.Count} existing APIs from shipped file");
+			}
+
 			if (GenerateShippedFile)
 			{
-				var shippedPath = Path.Combine(outputDir, ShippedFileName);
-				WriteApiFile(apis, shippedPath);
+				WriteApiFile(currentApis, shippedPath);
 				Log.LogMessage($"Generated shipped API file: {shippedPath}");
 			}
 
 			if (GenerateUnshippedFile)
 			{
-				var unshippedPath = Path.Combine(outputDir, UnshippedFileName);
-				// Unshipped file is typically empty when first generated
-				WriteApiFile(new List<string>(), unshippedPath);
-				Log.LogMessage($"Generated unshipped API file: {unshippedPath}");
+				var unshippedApis = GenerateUnshippedDiff(currentApis, shippedApis);
+				WriteApiFile(unshippedApis, unshippedPath);
+				Log.LogMessage($"Generated unshipped API file: {unshippedPath} with {unshippedApis.Count} entries");
 			}
 
 			return !Log.HasLoggedErrors;
+		}
+
+		private List<string> GenerateUnshippedDiff(List<string> currentApis, HashSet<string> shippedApis)
+		{
+			var unshippedApis = new List<string>();
+			var currentApiSet = new HashSet<string>(currentApis);
+
+			// Add new APIs (in current but not in shipped)
+			foreach (var api in currentApis)
+			{
+				if (!shippedApis.Contains(api))
+				{
+					unshippedApis.Add(api);
+				}
+			}
+
+			// Add removed APIs (in shipped but not in current) with *REMOVED* prefix
+			foreach (var shippedApi in shippedApis)
+			{
+				if (!currentApiSet.Contains(shippedApi))
+				{
+					unshippedApis.Add("*REMOVED*" + shippedApi);
+				}
+			}
+
+			unshippedApis.Sort(StringComparer.Ordinal);
+			return unshippedApis;
 		}
 
 		private List<string> ExtractPublicApis(AssemblyDefinition assembly)
