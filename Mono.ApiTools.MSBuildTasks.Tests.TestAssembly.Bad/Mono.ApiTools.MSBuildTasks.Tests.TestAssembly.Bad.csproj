@@ -4,6 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <WarningsAsErrors>RS0016;RS0017;RS0037</WarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
