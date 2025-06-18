@@ -7,472 +7,419 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace Mono.ApiTools.MSBuildTasks
+namespace Mono.ApiTools.MSBuildTasks;
+
+public class GeneratePublicApiFiles : Task
 {
-	public class GeneratePublicApiFiles : Task
+	/// <summary>
+	/// The collection of files to search for PublicAPI files.
+	/// This should include both PublicAPI.Shipped.txt and PublicAPI.Unshipped.txt files.
+	/// </summary>
+	[Required]
+	public ITaskItem[] Files { get; set; } = null!;
+
+	/// <summary>
+	/// The input assembly to generate public API files for.
+	/// </summary>
+	[Required]
+	public ITaskItem Assembly { get; set; } = null!;
+
+	public override bool Execute()
 	{
-		[Required]
-		public ITaskItem[] Files { get; set; } = null!;
-
-		public override bool Execute()
+		if (Files == null || Files.Length == 0)
 		{
-			if (Files == null || Files.Length == 0)
+			Log.LogError("No files specified.");
+			return false;
+		}
+
+		if (Assembly == null)
+		{
+			Log.LogError("Assembly property is required.");
+			return false;
+		}
+
+		Log.LogMessage($"Using assembly: {Assembly.ItemSpec}");
+
+		var assemblyPath = Path.GetFullPath(Assembly.ItemSpec);
+		if (!File.Exists(assemblyPath))
+		{
+			Log.LogError($"Assembly file '{assemblyPath}' does not exist.");
+			return false;
+		}
+
+		// Find PublicAPI files
+		var shippedFile = Files.FirstOrDefault(f => Path.GetFileName(f.ItemSpec).Equals("PublicAPI.Shipped.txt", StringComparison.OrdinalIgnoreCase));
+		var unshippedFile = Files.FirstOrDefault(f => Path.GetFileName(f.ItemSpec).Equals("PublicAPI.Unshipped.txt", StringComparison.OrdinalIgnoreCase));
+
+		if (shippedFile == null && unshippedFile == null)
+		{
+			Log.LogError("No PublicAPI.Shipped.txt or PublicAPI.Unshipped.txt files found in the Files collection.");
+			return false;
+		}
+
+		using var resolver = new DefaultAssemblyResolver();
+		resolver.RemoveSearchDirectory(".");
+		resolver.RemoveSearchDirectory("bin");
+		resolver.AddSearchDirectory(Path.GetDirectoryName(assemblyPath));
+
+		using var assembly = AssemblyDefinition.ReadAssembly(assemblyPath, new ReaderParameters
+		{
+			InMemory = true,
+			AssemblyResolver = resolver
+		});
+
+		Log.LogMessage($"Generating public API files for assembly {assembly.Name}...");
+
+		var currentApis = ExtractPublicApis(assembly);
+
+		// Read existing shipped APIs if the file exists
+		var shippedApis = new HashSet<string>();
+		var shippedHasNullableEnable = false;
+		if (shippedFile != null && File.Exists(shippedFile.ItemSpec))
+		{
+			var shippedContent = File.ReadAllText(shippedFile.ItemSpec);
+			shippedHasNullableEnable = shippedContent.StartsWith("#nullable enable");
+
+			var shippedLines = File.ReadAllLines(shippedFile.ItemSpec)
+				.Where(line =>
+					!string.IsNullOrWhiteSpace(line) &&
+					!line.StartsWith("#nullable") &&
+					!line.StartsWith("*REMOVED*"));
+			foreach (var line in shippedLines)
 			{
-				Log.LogError("No files specified.");
-				return false;
+				shippedApis.Add(line);
 			}
+			Log.LogMessage($"Read {shippedApis.Count} existing APIs from shipped file");
+		}
 
-			// Find the assembly file (should be a .dll)
-			var assemblyFile = Files.FirstOrDefault(f => f.ItemSpec.EndsWith(".dll", StringComparison.OrdinalIgnoreCase));
-			if (assemblyFile == null)
+		// Generate and write unshipped file if specified
+		if (unshippedFile != null)
+		{
+			var unshippedApis = GenerateUnshippedDiff(currentApis, shippedApis);
+			WriteApiFile(unshippedApis, unshippedFile.ItemSpec, shippedHasNullableEnable);
+			Log.LogMessage($"Generated unshipped API file: {unshippedFile.ItemSpec} with {unshippedApis.Count} entries");
+		}
+
+		return !Log.HasLoggedErrors;
+	}
+
+	private List<string> GenerateUnshippedDiff(List<string> currentApis, HashSet<string> shippedApis)
+	{
+		var unshippedApis = new List<string>();
+		var currentApiSet = new HashSet<string>(currentApis);
+
+		// Add new APIs (in current but not in shipped)
+		foreach (var api in currentApis)
+		{
+			if (!shippedApis.Contains(api))
 			{
-				Log.LogError("No assembly file (.dll) found in the Files collection.");
-				return false;
+				unshippedApis.Add(api);
 			}
+		}
 
-			// Find PublicAPI files
-			var shippedFile = Files.FirstOrDefault(f => Path.GetFileName(f.ItemSpec).Equals("PublicAPI.Shipped.txt", StringComparison.OrdinalIgnoreCase));
-			var unshippedFile = Files.FirstOrDefault(f => Path.GetFileName(f.ItemSpec).Equals("PublicAPI.Unshipped.txt", StringComparison.OrdinalIgnoreCase));
-
-			if (shippedFile == null && unshippedFile == null)
+		// Add removed APIs (in shipped but not in current) with *REMOVED* prefix
+		foreach (var shippedApi in shippedApis)
+		{
+			if (!currentApiSet.Contains(shippedApi))
 			{
-				Log.LogError("No PublicAPI.Shipped.txt or PublicAPI.Unshipped.txt files found in the Files collection.");
-				return false;
+				unshippedApis.Add("*REMOVED*" + shippedApi);
 			}
+		}
 
-			var assemblyPath = Path.GetFullPath(assemblyFile.ItemSpec);
+		unshippedApis.Sort(StringComparer.Ordinal);
+		return unshippedApis;
+	}
 
-			using var resolver = new DefaultAssemblyResolver();
-			resolver.RemoveSearchDirectory(".");
-			resolver.RemoveSearchDirectory("bin");
-			resolver.AddSearchDirectory(Path.GetDirectoryName(assemblyPath));
+	private List<string> ExtractPublicApis(AssemblyDefinition assembly)
+	{
+		var apis = new List<string>();
 
-			using var assembly = AssemblyDefinition.ReadAssembly(assemblyPath, new ReaderParameters
+		foreach (var type in assembly.MainModule.Types.Where(t => IsPublicType(t)))
+		{
+			if (ShouldIncludeType(type))
 			{
-				InMemory = true,
-				AssemblyResolver = resolver
+				ProcessType(type, apis);
+			}
+		}
+
+		apis.Sort(StringComparer.Ordinal);
+		return apis;
+	}
+
+	private void ProcessType(TypeDefinition type, List<string> apis)
+	{
+		// Add the type itself if it's not a compiler-generated type
+		if (!IsCompilerGenerated(type))
+		{
+			apis.Add(GetTypeSignature(type));
+		}
+
+		// Process members
+		foreach (var field in type.Fields.Where(f => IsPublicMember(f)))
+		{
+			apis.AddRange(GetFieldSignatures(field));
+		}
+		foreach (var property in type.Properties.Where(p => IsPublicProperty(p)))
+		{
+			apis.AddRange(GetPropertySignatures(property));
+		}
+		foreach (var method in type.Methods.Where(m => IsPublicMethod(m)))
+		{
+			apis.AddRange(GetMethodSignatures(method));
+		}
+		foreach (var @event in type.Events.Where(e => IsPublicEvent(e)))
+		{
+			apis.AddRange(GetEventSignatures(@event));
+		}
+	
+		// Process nested types
+		foreach (var nestedType in type.NestedTypes.Where(t => IsPublicType(t)))
+		{
+			ProcessType(nestedType, apis);
+		}
+	}
+
+	private bool IsPublicType(TypeDefinition type)
+	{
+		return type.IsPublic || type.IsNestedPublic;
+	}
+
+	private bool ShouldIncludeType(TypeDefinition type)
+	{
+		// Skip compiler-generated types like <Module>
+		if (type.Name == "<Module>")
+			return false;
+
+		// Skip types with special names (like those generated by compiler)
+		if (type.IsSpecialName && type.Name.StartsWith("<"))
+			return false;
+
+		return true;
+	}
+
+	private bool IsCompilerGenerated(IMemberDefinition member)
+	{
+		return member.HasCustomAttributes &&
+			member.CustomAttributes.Any(a => a.AttributeType.Name == "CompilerGeneratedAttribute");
+	}
+
+	private bool IsPublicMember(FieldDefinition field)
+	{
+		return field.IsPublic && !field.IsSpecialName && !IsCompilerGenerated(field);
+	}
+
+	private bool IsPublicProperty(PropertyDefinition property)
+	{
+		var getter = property.GetMethod;
+		var setter = property.SetMethod;
+		return (getter?.IsPublic == true || setter?.IsPublic == true) && !IsCompilerGenerated(property);
+	}
+
+	private bool IsPublicMethod(MethodDefinition method)
+	{
+		return method.IsPublic &&
+			!method.IsSpecialName &&
+			!method.IsGetter &&
+			!method.IsSetter &&
+			!method.IsAddOn &&
+			!method.IsRemoveOn &&
+			!IsCompilerGenerated(method);
+	}
+
+	private bool IsPublicEvent(EventDefinition @event)
+	{
+		var addMethod = @event.AddMethod;
+		var removeMethod = @event.RemoveMethod;
+		return (addMethod?.IsPublic == true || removeMethod?.IsPublic == true) && !IsCompilerGenerated(@event);
+	}
+
+	private string GetTypeSignature(TypeDefinition type)
+	{
+		return GetFullTypeName(type).Trim();
+	}
+
+	private IEnumerable<string> GetFieldSignatures(FieldReference member)
+	{
+		yield return $"{GetFullMemberName(member)} -> {GetTypeReference(member.FieldType)}";
+	}
+
+	private IEnumerable<string> GetPropertySignatures(PropertyDefinition property)
+	{
+		if (property.GetMethod is not null)
+			yield return $"{GetFullMemberName(property)}.get -> {GetTypeReference(property.PropertyType)}";
+
+		if (property.SetMethod is not null)
+			yield return $"{GetFullMemberName(property)}.set -> void";
+	}
+
+	private IEnumerable<string> GetMethodSignatures(MethodDefinition method)
+	{
+		var sb = new StringBuilder();
+
+		if (method.IsStatic)
+			sb.Append("static ");
+		if (method.IsAbstract)
+			sb.Append("abstract ");
+		else if (method.IsVirtual && method.IsNewSlot)
+			sb.Append("virtual ");
+		else if (method.IsVirtual)
+			sb.Append("override ");
+
+		// Method name (for constructors, this will be the full type name)
+		if (method.IsConstructor)
+		{
+			sb.Append(GetFullTypeName(method.DeclaringType));
+		}
+		else
+		{
+			sb.Append(GetFullMemberName(method));
+		}
+
+		// Generic parameters
+		if (method.HasGenericParameters)
+		{
+			sb.Append("<");
+			sb.Append(string.Join(", ", method.GenericParameters.Select(gp => gp.Name)));
+			sb.Append(">");
+		}
+
+		// Parameters
+		sb.Append("(");
+		if (method.HasParameters)
+		{
+			var parameters = method.Parameters.Select(p =>
+			{
+				var paramStr = "";
+				if (p.IsOut)
+					paramStr += "out ";
+				else if (p.ParameterType.IsByReference)
+					paramStr += "ref ";
+
+				paramStr += GetTypeReference(p.ParameterType);
+				paramStr += " " + p.Name;
+
+				if (p.HasDefault)
+				{
+					paramStr += " = " + FormatConstantValue(p.Constant);
+				}
+
+				return paramStr;
 			});
-
-			Log.LogMessage($"Generating public API files for assembly {assembly.Name}...");
-
-			var currentApis = ExtractPublicApis(assembly);
-
-			// Read existing shipped APIs if the file exists
-			var shippedApis = new HashSet<string>();
-			var shippedHasNullableEnable = false;
-			if (shippedFile != null && File.Exists(shippedFile.ItemSpec))
-			{
-				var shippedContent = File.ReadAllText(shippedFile.ItemSpec);
-				shippedHasNullableEnable = shippedContent.StartsWith("#nullable enable");
-				
-				var shippedLines = File.ReadAllLines(shippedFile.ItemSpec)
-					.Where(line => !string.IsNullOrWhiteSpace(line) && 
-					              !line.StartsWith("#nullable") && 
-					              !line.StartsWith("*REMOVED*"));
-				foreach (var line in shippedLines)
-				{
-					shippedApis.Add(line);
-				}
-				Log.LogMessage($"Read {shippedApis.Count} existing APIs from shipped file");
-			}
-
-			// Generate and write unshipped file if specified
-			if (unshippedFile != null)
-			{
-				var unshippedApis = GenerateUnshippedDiff(currentApis, shippedApis);
-				WriteApiFile(unshippedApis, unshippedFile.ItemSpec, shippedHasNullableEnable);
-				Log.LogMessage($"Generated unshipped API file: {unshippedFile.ItemSpec} with {unshippedApis.Count} entries");
-			}
-
-			return !Log.HasLoggedErrors;
+			sb.Append(string.Join(", ", parameters));
 		}
+		sb.Append(")");
 
-		private List<string> GenerateUnshippedDiff(List<string> currentApis, HashSet<string> shippedApis)
+		// Return type for methods (constructors have -> void)
+		sb.Append(" -> ");
+		if (method.IsConstructor)
 		{
-			var unshippedApis = new List<string>();
-			var currentApiSet = new HashSet<string>(currentApis);
-
-			// Add new APIs (in current but not in shipped)
-			foreach (var api in currentApis)
-			{
-				if (!shippedApis.Contains(api))
-				{
-					unshippedApis.Add(api);
-				}
-			}
-
-			// Add removed APIs (in shipped but not in current) with *REMOVED* prefix
-			foreach (var shippedApi in shippedApis)
-			{
-				if (!currentApiSet.Contains(shippedApi))
-				{
-					unshippedApis.Add("*REMOVED*" + shippedApi);
-				}
-			}
-
-			unshippedApis.Sort(StringComparer.Ordinal);
-			return unshippedApis;
+			sb.Append("void");
 		}
-
-		private List<string> ExtractPublicApis(AssemblyDefinition assembly)
+		else
 		{
-			var apis = new List<string>();
-
-			foreach (var type in assembly.MainModule.Types.Where(t => IsPublicType(t)))
-			{
-				if (ShouldIncludeType(type))
-				{
-					ProcessType(type, apis);
-				}
-			}
-
-			apis.Sort(StringComparer.Ordinal);
-			return apis;
+			sb.Append(GetTypeReference(method.ReturnType));
 		}
 
-		private void ProcessType(TypeDefinition type, List<string> apis)
+		yield return sb.ToString().Trim();
+	}
+
+	private IEnumerable<string> GetEventSignatures(EventDefinition @event)
+	{
+		var sb = new StringBuilder();
+
+		var addMethod = @event.AddMethod;
+		if (addMethod?.IsStatic == true)
+			sb.Append("static ");
+
+		sb.Append("event ");
+		sb.Append(GetTypeReference(@event.EventType));
+		sb.Append(" ");
+		sb.Append(GetFullMemberName(@event));
+
+	yield 	return sb.ToString().Trim();
+	}
+
+	private string GetFullTypeName(TypeReference type)
+	{
+		if (type.DeclaringType != null)
 		{
-			// Add the type itself if it's not a compiler-generated type
-			if (!IsCompilerGenerated(type))
-			{
-				apis.Add(GetTypeSignature(type));
-			}
-
-			// Process nested types
-			foreach (var nestedType in type.NestedTypes.Where(t => IsPublicType(t)))
-			{
-				ProcessType(nestedType, apis);
-			}
-
-			// Process members
-			foreach (var field in type.Fields.Where(f => IsPublicMember(f)))
-			{
-				apis.Add(GetFieldSignature(field));
-			}
-
-			foreach (var property in type.Properties.Where(p => IsPublicProperty(p)))
-			{
-				apis.Add(GetPropertySignature(property));
-			}
-
-			foreach (var method in type.Methods.Where(m => IsPublicMethod(m)))
-			{
-				apis.Add(GetMethodSignature(method));
-			}
-
-			foreach (var @event in type.Events.Where(e => IsPublicEvent(e)))
-			{
-				apis.Add(GetEventSignature(@event));
-			}
+			return GetFullTypeName(type.DeclaringType) + "." + type.Name;
 		}
 
-		private bool IsPublicType(TypeDefinition type)
+		var namespaceName = string.IsNullOrEmpty(type.Namespace) ? "" : type.Namespace + ".";
+		return namespaceName + type.Name;
+	}
+
+	private string GetFullMemberName(MemberReference member)
+	{
+		return GetFullTypeName(member.DeclaringType) + "." + member.Name;
+	}
+
+	private string GetTypeReference(TypeReference type)
+	{
+		if (type.IsByReference)
 		{
-			return type.IsPublic || type.IsNestedPublic;
+			return GetTypeReference(type.GetElementType());
 		}
 
-		private bool ShouldIncludeType(TypeDefinition type)
+		// Handle special types
+		switch (type.FullName)
 		{
-			// Skip compiler-generated types like <Module>
-			if (type.Name == "<Module>")
-				return false;
-
-			// Skip types with special names (like those generated by compiler)
-			if (type.IsSpecialName && type.Name.StartsWith("<"))
-				return false;
-
-			return true;
+			case "System.Void": return "void";
+			case "System.Boolean": return "bool";
+			case "System.Byte": return "byte";
+			case "System.SByte": return "sbyte";
+			case "System.Char": return "char";
+			case "System.Decimal": return "decimal";
+			case "System.Double": return "double";
+			case "System.Single": return "float";
+			case "System.Int32": return "int";
+			case "System.UInt32": return "uint";
+			case "System.Int64": return "long";
+			case "System.UInt64": return "ulong";
+			case "System.Int16": return "short";
+			case "System.UInt16": return "ushort";
+			case "System.Object": return "object";
+			case "System.String": return "string";
 		}
 
-		private bool IsCompilerGenerated(IMemberDefinition member)
+		// For other types, use the full name
+		if (type.DeclaringType != null)
 		{
-			return member.HasCustomAttributes && 
-				   member.CustomAttributes.Any(a => a.AttributeType.Name == "CompilerGeneratedAttribute");
+			return GetTypeReference(type.DeclaringType) + "." + type.Name;
 		}
 
-		private bool IsPublicMember(FieldDefinition field)
+		return type.FullName.Replace("/", ".");
+	}
+
+	private string FormatConstantValue(object value)
+	{
+		if (value == null)
+			return "null";
+		if (value is string str)
+			return $"\"{str}\"";
+		if (value is char ch)
+			return $"'{ch}'";
+		if (value is bool b)
+			return b ? "true" : "false";
+		return value.ToString();
+	}
+
+	private void WriteApiFile(List<string> apis, string filePath, bool includeNullableEnable)
+	{
+		var directory = Path.GetDirectoryName(filePath);
+		if (!Directory.Exists(directory))
 		{
-			return field.IsPublic && !field.IsSpecialName && !IsCompilerGenerated(field);
+			Directory.CreateDirectory(directory);
 		}
 
-		private bool IsPublicProperty(PropertyDefinition property)
+		var lines = new List<string>();
+		if (includeNullableEnable)
 		{
-			var getter = property.GetMethod;
-			var setter = property.SetMethod;
-			return (getter?.IsPublic == true || setter?.IsPublic == true) && !IsCompilerGenerated(property);
+			lines.Add("#nullable enable");
 		}
+		lines.AddRange(apis);
 
-		private bool IsPublicMethod(MethodDefinition method)
-		{
-			return method.IsPublic && 
-				   !method.IsSpecialName && 
-				   !method.IsGetter && 
-				   !method.IsSetter && 
-				   !method.IsAddOn && 
-				   !method.IsRemoveOn &&
-				   !IsCompilerGenerated(method);
-		}
-
-		private bool IsPublicEvent(EventDefinition @event)
-		{
-			var addMethod = @event.AddMethod;
-			var removeMethod = @event.RemoveMethod;
-			return (addMethod?.IsPublic == true || removeMethod?.IsPublic == true) && !IsCompilerGenerated(@event);
-		}
-
-		private string GetTypeSignature(TypeDefinition type)
-		{
-			var sb = new StringBuilder();
-
-			// Add modifiers
-			if (type.IsAbstract && type.IsSealed)
-				sb.Append("static ");
-			else if (type.IsAbstract)
-				sb.Append("abstract ");
-			else if (type.IsSealed && type.IsClass)
-				sb.Append("sealed ");
-
-			// Add type kind
-			if (type.IsInterface)
-				sb.Append("interface ");
-			else if (type.IsEnum)
-				sb.Append("enum ");
-			else if (type.IsValueType && !type.IsEnum)
-				sb.Append("struct ");
-			else
-				sb.Append("class ");
-
-			// Add full type name
-			sb.Append(GetFullTypeName(type));
-
-			return sb.ToString().Trim();
-		}
-
-		private string GetFieldSignature(FieldDefinition field)
-		{
-			var sb = new StringBuilder();
-
-			if (field.IsStatic)
-				sb.Append("static ");
-			if (field.IsInitOnly)
-				sb.Append("readonly ");
-			if (field.IsLiteral)
-				sb.Append("const ");
-
-			sb.Append(GetTypeReference(field.FieldType));
-			sb.Append(" ");
-			sb.Append(GetFullMemberName(field));
-
-			if (field.IsLiteral && field.HasConstant)
-			{
-				sb.Append(" = ");
-				sb.Append(FormatConstantValue(field.Constant));
-			}
-
-			return sb.ToString().Trim();
-		}
-
-		private string GetPropertySignature(PropertyDefinition property)
-		{
-			var sb = new StringBuilder();
-
-			var getter = property.GetMethod;
-			var setter = property.SetMethod;
-
-			if (getter?.IsStatic == true || setter?.IsStatic == true)
-				sb.Append("static ");
-
-			sb.Append(GetTypeReference(property.PropertyType));
-			sb.Append(" ");
-			sb.Append(GetFullMemberName(property));
-
-			if (property.HasParameters)
-			{
-				sb.Append("[");
-				sb.Append(string.Join(", ", property.Parameters.Select(p => 
-					GetTypeReference(p.ParameterType) + " " + p.Name)));
-				sb.Append("]");
-			}
-
-			sb.Append(" { ");
-			if (getter?.IsPublic == true)
-				sb.Append("get; ");
-			if (setter?.IsPublic == true)
-				sb.Append("set; ");
-			sb.Append("}");
-
-			return sb.ToString().Trim();
-		}
-
-		private string GetMethodSignature(MethodDefinition method)
-		{
-			var sb = new StringBuilder();
-
-			if (method.IsStatic)
-				sb.Append("static ");
-			if (method.IsAbstract)
-				sb.Append("abstract ");
-			else if (method.IsVirtual && method.IsNewSlot)
-				sb.Append("virtual ");
-			else if (method.IsVirtual)
-				sb.Append("override ");
-
-			// Method name (for constructors, this will be the full type name)
-			if (method.IsConstructor)
-			{
-				sb.Append(GetFullTypeName(method.DeclaringType));
-			}
-			else
-			{
-				sb.Append(GetFullMemberName(method));
-			}
-
-			// Generic parameters
-			if (method.HasGenericParameters)
-			{
-				sb.Append("<");
-				sb.Append(string.Join(", ", method.GenericParameters.Select(gp => gp.Name)));
-				sb.Append(">");
-			}
-
-			// Parameters
-			sb.Append("(");
-			if (method.HasParameters)
-			{
-				var parameters = method.Parameters.Select(p =>
-				{
-					var paramStr = "";
-					if (p.IsOut)
-						paramStr += "out ";
-					else if (p.ParameterType.IsByReference)
-						paramStr += "ref ";
-					
-					paramStr += GetTypeReference(p.ParameterType);
-					paramStr += " " + p.Name;
-
-					if (p.HasDefault)
-					{
-						paramStr += " = " + FormatConstantValue(p.Constant);
-					}
-
-					return paramStr;
-				});
-				sb.Append(string.Join(", ", parameters));
-			}
-			sb.Append(")");
-
-			// Return type for methods (constructors have -> void)
-			sb.Append(" -> ");
-			if (method.IsConstructor)
-			{
-				sb.Append("void");
-			}
-			else
-			{
-				sb.Append(GetTypeReference(method.ReturnType));
-			}
-
-			return sb.ToString().Trim();
-		}
-
-		private string GetEventSignature(EventDefinition @event)
-		{
-			var sb = new StringBuilder();
-
-			var addMethod = @event.AddMethod;
-			if (addMethod?.IsStatic == true)
-				sb.Append("static ");
-
-			sb.Append("event ");
-			sb.Append(GetTypeReference(@event.EventType));
-			sb.Append(" ");
-			sb.Append(GetFullMemberName(@event));
-
-			return sb.ToString().Trim();
-		}
-
-		private string GetFullTypeName(TypeDefinition type)
-		{
-			if (type.DeclaringType != null)
-			{
-				return GetFullTypeName(type.DeclaringType) + "." + type.Name;
-			}
-
-			var namespaceName = string.IsNullOrEmpty(type.Namespace) ? "" : type.Namespace + ".";
-			return namespaceName + type.Name;
-		}
-
-		private string GetFullMemberName(IMemberDefinition member)
-		{
-			return GetFullTypeName(member.DeclaringType) + "." + member.Name;
-		}
-
-		private string GetTypeReference(TypeReference type)
-		{
-			if (type.IsByReference)
-			{
-				return GetTypeReference(type.GetElementType());
-			}
-
-			// Handle special types
-			switch (type.FullName)
-			{
-				case "System.Void": return "void";
-				case "System.Boolean": return "bool";
-				case "System.Byte": return "byte";
-				case "System.SByte": return "sbyte";
-				case "System.Char": return "char";
-				case "System.Decimal": return "decimal";
-				case "System.Double": return "double";
-				case "System.Single": return "float";
-				case "System.Int32": return "int";
-				case "System.UInt32": return "uint";
-				case "System.Int64": return "long";
-				case "System.UInt64": return "ulong";
-				case "System.Int16": return "short";
-				case "System.UInt16": return "ushort";
-				case "System.Object": return "object";
-				case "System.String": return "string";
-			}
-
-			// For other types, use the full name
-			if (type.DeclaringType != null)
-			{
-				return GetTypeReference(type.DeclaringType) + "." + type.Name;
-			}
-
-			return type.FullName.Replace("/", ".");
-		}
-
-		private string FormatConstantValue(object value)
-		{
-			if (value == null)
-				return "null";
-			if (value is string str)
-				return $"\"{str}\"";
-			if (value is char ch)
-				return $"'{ch}'";
-			if (value is bool b)
-				return b ? "true" : "false";
-			return value.ToString();
-		}
-
-		private void WriteApiFile(List<string> apis, string filePath, bool includeNullableEnable)
-		{
-			var directory = Path.GetDirectoryName(filePath);
-			if (!Directory.Exists(directory))
-			{
-				Directory.CreateDirectory(directory);
-			}
-
-			var lines = new List<string>();
-			if (includeNullableEnable)
-			{
-				lines.Add("#nullable enable");
-			}
-			lines.AddRange(apis);
-
-			File.WriteAllLines(filePath, lines, Encoding.UTF8);
-		}
+		File.WriteAllLines(filePath, lines, Encoding.UTF8);
 	}
 }

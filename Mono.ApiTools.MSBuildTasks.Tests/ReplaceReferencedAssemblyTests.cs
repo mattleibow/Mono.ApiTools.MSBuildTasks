@@ -1,11 +1,17 @@
 using Microsoft.Build.Utilities;
 using System.IO;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Mono.ApiTools.MSBuildTasks.Tests
 {
 	public class ReplaceReferencedAssemblyTests : MSBuildTaskTestFixture<ReplaceReferencedAssembly>
 	{
+		public ReplaceReferencedAssemblyTests(ITestOutputHelper output, string testContextDirectory = null)
+			: base(output, testContextDirectory)
+		{
+		}
+
 		protected ReplaceReferencedAssembly GetNewTask(string assembly, string oldRef, string newRef) =>
 			new()
 			{

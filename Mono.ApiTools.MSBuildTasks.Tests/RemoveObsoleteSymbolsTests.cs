@@ -2,11 +2,17 @@ using Microsoft.Build.Utilities;
 using System.IO;
 using System.Linq;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Mono.ApiTools.MSBuildTasks.Tests
 {
 	public class RemoveObsoleteSymbolsTests : MSBuildTaskTestFixture<RemoveObsoleteSymbols>
 	{
+		public RemoveObsoleteSymbolsTests(ITestOutputHelper output, string testContextDirectory = null)
+			: base(output, testContextDirectory)
+		{
+		}
+
 		protected RemoveObsoleteSymbols GetNewTask(string assembly, bool onlyErrors = true, string outputPath = null) =>
 			new()
 			{

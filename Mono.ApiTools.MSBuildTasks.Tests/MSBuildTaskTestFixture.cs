@@ -3,12 +3,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using Xunit.Abstractions;
 
 namespace Mono.ApiTools.MSBuildTasks.Tests
 {
 	public abstract class MSBuildTaskTestFixture<TTask> : IDisposable, IBuildEngine
 		where TTask : ITask
 	{
+		protected readonly ITestOutputHelper Output;
 		protected readonly string DestinationDirectory;
 
 		protected List<BuildErrorEventArgs> LogErrorEvents = new();
@@ -16,8 +18,9 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 		protected List<CustomBuildEventArgs> LogCustomEvents = new();
 		protected List<BuildWarningEventArgs> LogWarningEvents = new();
 
-		public MSBuildTaskTestFixture(string testContextDirectory = null)
+		public MSBuildTaskTestFixture(ITestOutputHelper output, string testContextDirectory = null)
 		{
+			Output = output;
 			DestinationDirectory = testContextDirectory ?? Path.Combine(Path.GetTempPath(), GetType().Name, Path.GetRandomFileName());
 		}
 
@@ -39,6 +42,15 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 
 				File.Copy(file, dest);
 			}
+		}
+
+		protected void WriteFile(string fileName, string contents)
+		{
+			if (!Directory.Exists(DestinationDirectory))
+				Directory.CreateDirectory(DestinationDirectory);
+
+			var filePath = Path.Combine(DestinationDirectory, fileName);
+			File.WriteAllText(filePath, contents);
 		}
 
 		// IBuildEngine
