@@ -268,20 +268,15 @@ namespace Mono.ApiTools.MSBuildTasks
 			else if (method.IsVirtual)
 				sb.Append("override ");
 
-			// Return type
-			if (!method.IsConstructor)
+			// Method name (for constructors, this will be the full type name)
+			if (method.IsConstructor)
 			{
-				sb.Append(GetTypeReference(method.ReturnType));
-				sb.Append(" ");
+				sb.Append(GetFullTypeName(method.DeclaringType));
 			}
 			else
 			{
-				// Constructor
-				sb.Append("void ");
+				sb.Append(GetFullMemberName(method));
 			}
-
-			// Method name
-			sb.Append(GetFullMemberName(method));
 
 			// Generic parameters
 			if (method.HasGenericParameters)
@@ -317,10 +312,14 @@ namespace Mono.ApiTools.MSBuildTasks
 			}
 			sb.Append(")");
 
-			// Return type for methods (not constructors)
-			if (!method.IsConstructor)
+			// Return type for methods (constructors have -> void)
+			sb.Append(" -> ");
+			if (method.IsConstructor)
 			{
-				sb.Append(" -> ");
+				sb.Append("void");
+			}
+			else
+			{
 				sb.Append(GetTypeReference(method.ReturnType));
 			}
 
