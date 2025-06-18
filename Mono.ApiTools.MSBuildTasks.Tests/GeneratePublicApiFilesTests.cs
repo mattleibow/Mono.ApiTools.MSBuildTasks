@@ -1,4 +1,5 @@
 using Microsoft.Build.Utilities;
+using System;
 using System.IO;
 using System.Linq;
 using Xunit;
@@ -7,6 +8,58 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 {
 	public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublicApiFiles>
 	{
+		private const string ExpectedFullApiContent = @"Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing.AmazingMethod() -> string
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.NormalMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NormalMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteMethod() -> void
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.NormalField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.NormalProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NormalField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NormalProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteProperty { get; set; }
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.NormalEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NormalEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteEvent
+";
 		protected GeneratePublicApiFiles GetNewTask(string assembly, string outputDirectory = null, bool generateShipped = true, bool generateUnshipped = false) =>
 			new()
 			{
@@ -30,20 +83,8 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 			var apiFilePath = Path.Combine(DestinationDirectory, "PublicAPI.Shipped.txt");
 			Assert.True(File.Exists(apiFilePath), "PublicAPI.Shipped.txt file should be created");
 
-			var apiContents = File.ReadAllLines(apiFilePath);
-			Assert.NotEmpty(apiContents);
-
-			// Check for exact API entries
-			var expectedApis = new[]
-			{
-				"class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass",
-				"Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalMethod() -> void"
-			};
-			
-			foreach (var expectedApi in expectedApis)
-			{
-				Assert.Contains(expectedApi, apiContents);
-			}
+			var actualContent = File.ReadAllText(apiFilePath);
+			Assert.Equal(ExpectedFullApiContent, actualContent);
 		}
 
 		[Fact]
@@ -61,8 +102,8 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 			Assert.True(File.Exists(apiFilePath), "PublicAPI.Unshipped.txt file should be created");
 
 			// Unshipped file should contain all APIs when no shipped file exists
-			var apiContents = File.ReadAllLines(apiFilePath);
-			Assert.NotEmpty(apiContents);
+			var actualContent = File.ReadAllText(apiFilePath);
+			Assert.Equal(ExpectedFullApiContent, actualContent);
 		}
 
 		[Fact]
@@ -81,6 +122,12 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 
 			Assert.True(File.Exists(shippedPath), "PublicAPI.Shipped.txt file should be created");
 			Assert.True(File.Exists(unshippedPath), "PublicAPI.Unshipped.txt file should be created");
+
+			var shippedContent = File.ReadAllText(shippedPath);
+			var unshippedContent = File.ReadAllText(unshippedPath);
+
+			Assert.Equal(ExpectedFullApiContent, shippedContent);
+			Assert.Equal(ExpectedFullApiContent, unshippedContent);
 		}
 
 		[Fact]
@@ -95,6 +142,9 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 
 			var apiFilePath = Path.Combine(DestinationDirectory, "api-output", "PublicAPI.Shipped.txt");
 			Assert.True(File.Exists(apiFilePath), "PublicAPI.Shipped.txt file should be created in custom directory");
+
+			var actualContent = File.ReadAllText(apiFilePath);
+			Assert.Equal(ExpectedFullApiContent, actualContent);
 		}
 
 		[Fact]
@@ -108,13 +158,10 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 			Assert.True(success, $"{task.GetType()}.Execute() failed.");
 
 			var apiFilePath = Path.Combine(DestinationDirectory, "PublicAPI.Shipped.txt");
-			var apiContents = File.ReadAllLines(apiFilePath);
+			var actualContent = File.ReadAllText(apiFilePath);
 
-			// Should include normal methods
-			Assert.Contains("Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalMethod() -> void", apiContents);
-			
 			// Should include obsolete methods since they're still part of the public API
-			Assert.Contains("Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteMethod() -> void", apiContents);
+			Assert.Equal(ExpectedFullApiContent, actualContent);
 		}
 
 		[Fact]
@@ -128,10 +175,10 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 			Assert.True(success, $"{task.GetType()}.Execute() failed.");
 
 			var apiFilePath = Path.Combine(DestinationDirectory, "PublicAPI.Shipped.txt");
-			var apiContents = File.ReadAllLines(apiFilePath);
+			var actualContent = File.ReadAllText(apiFilePath);
 
 			// Should include properties
-			Assert.Contains("bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalProperty { get; set; }", apiContents);
+			Assert.Equal(ExpectedFullApiContent, actualContent);
 		}
 
 		[Fact]
@@ -145,10 +192,10 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 			Assert.True(success, $"{task.GetType()}.Execute() failed.");
 
 			var apiFilePath = Path.Combine(DestinationDirectory, "PublicAPI.Shipped.txt");
-			var apiContents = File.ReadAllLines(apiFilePath);
+			var actualContent = File.ReadAllText(apiFilePath);
 
 			// Should include fields
-			Assert.Contains("bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalField", apiContents);
+			Assert.Equal(ExpectedFullApiContent, actualContent);
 		}
 
 		[Fact]
@@ -162,10 +209,10 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 			Assert.True(success, $"{task.GetType()}.Execute() failed.");
 
 			var apiFilePath = Path.Combine(DestinationDirectory, "PublicAPI.Shipped.txt");
-			var apiContents = File.ReadAllLines(apiFilePath);
+			var actualContent = File.ReadAllText(apiFilePath);
 
 			// Should include events
-			Assert.Contains("event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalEvent", apiContents);
+			Assert.Equal(ExpectedFullApiContent, actualContent);
 		}
 
 		[Fact]
@@ -179,15 +226,10 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 			Assert.True(success, $"{task.GetType()}.Execute() failed.");
 
 			var apiFilePath = Path.Combine(DestinationDirectory, "PublicAPI.Shipped.txt");
-			var apiContents = File.ReadAllLines(apiFilePath);
+			var actualContent = File.ReadAllText(apiFilePath);
 
-			// API entries should be sorted - validate they are in sorted order
-			for (int i = 1; i < apiContents.Length; i++)
-			{
-				Assert.True(
-					string.CompareOrdinal(apiContents[i-1], apiContents[i]) <= 0,
-					$"API entries not sorted: '{apiContents[i-1]}' should come before '{apiContents[i]}'");
-			}
+			// API entries should be sorted - check exact content which contains sorted APIs
+			Assert.Equal(ExpectedFullApiContent, actualContent);
 		}
 
 		[Fact]
@@ -213,15 +255,59 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 			var unshippedPath = Path.Combine(DestinationDirectory, "PublicAPI.Unshipped.txt");
 			Assert.True(File.Exists(unshippedPath), "PublicAPI.Unshipped.txt file should be created");
 
-			var unshippedContents = File.ReadAllLines(unshippedPath);
-			
-			// Should contain new APIs not in shipped
-			Assert.Contains(unshippedContents, line => line.Contains("Amazing"));
-			Assert.Contains(unshippedContents, line => line.Contains("ObsoleteMethod"));
-			
-			// Should not contain APIs that are already shipped
-			Assert.DoesNotContain(unshippedContents, line => line == "class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass");
-			Assert.DoesNotContain(unshippedContents, line => line == "Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalMethod() -> void");
+			var actualContent = File.ReadAllText(unshippedPath);
+			var expectedContent = @"Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing.AmazingMethod() -> string
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.NormalMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NormalMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteMethod() -> void
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.NormalField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.NormalProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NormalField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NormalProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteProperty { get; set; }
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.NormalEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NormalEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteEvent
+";
+
+			Assert.Equal(expectedContent, actualContent);
 		}
 
 		[Fact]
@@ -247,11 +333,62 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 			Assert.True(success, $"{task.GetType()}.Execute() failed.");
 
 			var unshippedPath = Path.Combine(DestinationDirectory, "PublicAPI.Unshipped.txt");
-			var unshippedContents = File.ReadAllLines(unshippedPath);
+			var actualContent = File.ReadAllText(unshippedPath);
 			
-			// Should contain removed APIs with *REMOVED* prefix
-			Assert.Contains(unshippedContents, line => line == "*REMOVED*Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.RemovedMethod() -> void");
-			Assert.Contains(unshippedContents, line => line == "*REMOVED*class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RemovedClass");
+			var expectedContent = @"*REMOVED*Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.RemovedMethod() -> void
+*REMOVED*class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RemovedClass
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing.AmazingMethod() -> string
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.NormalMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NormalMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteMethod() -> void
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.NormalField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.NormalProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NormalField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NormalProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteProperty { get; set; }
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.NormalEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NormalEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteEvent
+";
+
+			Assert.Equal(expectedContent, actualContent);
 		}
 
 		[Fact]
@@ -275,10 +412,62 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 			Assert.True(success, $"{task.GetType()}.Execute() failed.");
 
 			var unshippedPath = Path.Combine(DestinationDirectory, "PublicAPI.Unshipped.txt");
-			var unshippedContents = File.ReadAllLines(unshippedPath);
+			var actualContent = File.ReadAllText(unshippedPath);
 			
-			// Should not re-add existing removed APIs
-			Assert.DoesNotContain(unshippedContents, line => line.Contains("OldRemovedMethod"));
+			// This is the same as the previous "new APIs" test since all APIs except RootClass are new
+			var expectedContent = @"Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing.AmazingMethod() -> string
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.NormalMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NormalMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteMethod() -> void
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.NormalField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.NormalProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NormalField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NormalProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteProperty { get; set; }
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.NormalEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NormalEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteEvent
+";
+
+			Assert.Equal(expectedContent, actualContent);
 		}
 
 		[Fact]
@@ -302,16 +491,62 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 			Assert.True(success, $"{task.GetType()}.Execute() failed.");
 
 			var unshippedPath = Path.Combine(DestinationDirectory, "PublicAPI.Unshipped.txt");
-			var unshippedContents = File.ReadAllLines(unshippedPath);
+			var actualContent = File.ReadAllText(unshippedPath);
 			
-			// Should contain new APIs (Api3)
-			Assert.Contains("Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalMethod() -> void", unshippedContents);
-			
-			// Should contain removed APIs with *REMOVED* prefix (Api2)
-			Assert.Contains("*REMOVED*Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.RemovedApi() -> void", unshippedContents);
-			
-			// Should not contain APIs that are already shipped (Api1)
-			Assert.DoesNotContain("class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass", unshippedContents);
+			var expectedContent = @"*REMOVED*Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.RemovedApi() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing.AmazingMethod() -> string
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.NormalMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NormalMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteErrorMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteMethod() -> void
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.NormalField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.NormalProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NormalField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NormalProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteErrorField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteErrorProperty { get; set; }
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteField
+bool Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteProperty { get; set; }
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass
+class Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.NormalEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NestedNestedClass.ObsoleteEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.NormalEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NestedClass.ObsoleteEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.NormalEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteErrorEvent
+event System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass.ObsoleteEvent
+";
+
+			Assert.Equal(expectedContent, actualContent);
 		}
 	}
 }
