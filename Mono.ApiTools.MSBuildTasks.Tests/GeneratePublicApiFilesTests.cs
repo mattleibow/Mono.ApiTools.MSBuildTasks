@@ -25,6 +25,36 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 		};
 
 	[Fact]
+	public void GeneratesUnshippedApiFileWithNoChanges()
+	{
+		CopyTestFiles("Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll");
+		WriteFile("PublicAPI.Shipped.txt", ExpectedFullApiContent);
+		WriteFile("PublicAPI.Unshipped.txt", "#nullable enable");
+
+		var unshippedPath = Path.Combine(DestinationDirectory, "PublicAPI.Unshipped.txt");
+
+		var task = GetNewTask();
+		var success = task.Execute();
+
+		Assert.True(success, $"{task.GetType()}.Execute() failed.");
+		Assert.True(File.Exists(unshippedPath), "PublicAPI.Unshipped.txt file should be created");
+
+		var actualContent = File.ReadAllText(unshippedPath);
+
+		var expectedContent =
+			"""
+			#nullable enable
+			""";
+
+		Output.WriteLine("Actual Unshipped API Content:");
+		Output.WriteLine(actualContent);
+		Output.WriteLine("Expected Unshipped API Content:");
+		Output.WriteLine(expectedContent);
+
+		Assert.Equal(expectedContent, actualContent);
+	}
+
+	[Fact]
 	public void GeneratesUnshippedApiFileWithOnlyNewApis()
 	{
 		CopyTestFiles("Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll");

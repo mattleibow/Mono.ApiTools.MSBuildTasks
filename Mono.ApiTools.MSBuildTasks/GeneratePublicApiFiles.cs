@@ -3,6 +3,7 @@ using Microsoft.Build.Utilities;
 using Mono.Cecil;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -171,7 +172,7 @@ public class GeneratePublicApiFiles : Task
 		{
 			apis.AddRange(GetEventSignatures(@event));
 		}
-	
+
 		// Process nested types
 		foreach (var nestedType in type.NestedTypes.Where(t => IsPublicType(t)))
 		{
@@ -218,7 +219,7 @@ public class GeneratePublicApiFiles : Task
 	private bool IsPublicMethod(MethodDefinition method)
 	{
 		return method.IsPublic &&
-			!method.IsSpecialName &&
+			(!method.IsSpecialName || method.IsConstructor) &&
 			!method.IsGetter &&
 			!method.IsSetter &&
 			!method.IsAddOn &&
@@ -238,15 +239,15 @@ public class GeneratePublicApiFiles : Task
 		return GetFullTypeName(type).Trim();
 	}
 
-	private IEnumerable<string> GetFieldSignatures(FieldReference member)
+	private IEnumerable<string> GetFieldSignatures(FieldDefinition member)
 	{
-		yield return $"{GetFullMemberName(member)} -> {GetTypeReference(member.FieldType)}";
+		yield return $"{GetFullMemberName(member)} -> {GetTypeReference(member.FieldType, member.CustomAttributes)}";
 	}
 
 	private IEnumerable<string> GetPropertySignatures(PropertyDefinition property)
 	{
 		if (property.GetMethod is not null)
-			yield return $"{GetFullMemberName(property)}.get -> {GetTypeReference(property.PropertyType)}";
+			yield return $"{GetFullMemberName(property)}.get -> {GetTypeReference(property.PropertyType, property.CustomAttributes)}";
 
 		if (property.SetMethod is not null)
 			yield return $"{GetFullMemberName(property)}.set -> void";
@@ -269,6 +270,8 @@ public class GeneratePublicApiFiles : Task
 		if (method.IsConstructor)
 		{
 			sb.Append(GetFullTypeName(method.DeclaringType));
+			sb.Append(".");
+			sb.Append(method.DeclaringType.Name);
 		}
 		else
 		{
@@ -331,12 +334,12 @@ public class GeneratePublicApiFiles : Task
 		if (addMethod?.IsStatic == true)
 			sb.Append("static ");
 
-		sb.Append("event ");
-		sb.Append(GetTypeReference(@event.EventType));
-		sb.Append(" ");
 		sb.Append(GetFullMemberName(@event));
+		sb.Append(" -> ");
+		sb.Append(GetTypeReference(@event.EventType, @event.CustomAttributes));
+		sb.Append("?");
 
-	yield 	return sb.ToString().Trim();
+		yield return sb.ToString().Trim();
 	}
 
 	private string GetFullTypeName(TypeReference type)
@@ -355,32 +358,25 @@ public class GeneratePublicApiFiles : Task
 		return GetFullTypeName(member.DeclaringType) + "." + member.Name;
 	}
 
-	private string GetTypeReference(TypeReference type)
+	private string GetTypeReference(TypeReference type, ICollection<CustomAttribute>? attributes = null)
 	{
 		if (type.IsByReference)
 		{
-			return GetTypeReference(type.GetElementType());
+			return GetTypeReference(type.GetElementType(), attributes);
 		}
 
-		// Handle special types
-		switch (type.FullName)
+		if (GetKeywordType(type) is string keywordType)
 		{
-			case "System.Void": return "void";
-			case "System.Boolean": return "bool";
-			case "System.Byte": return "byte";
-			case "System.SByte": return "sbyte";
-			case "System.Char": return "char";
-			case "System.Decimal": return "decimal";
-			case "System.Double": return "double";
-			case "System.Single": return "float";
-			case "System.Int32": return "int";
-			case "System.UInt32": return "uint";
-			case "System.Int64": return "long";
-			case "System.UInt64": return "ulong";
-			case "System.Int16": return "short";
-			case "System.UInt16": return "ushort";
-			case "System.Object": return "object";
-			case "System.String": return "string";
+			return !HasNullable(attributes)
+				? type.IsValueType
+					? keywordType
+					: keywordType + "!"
+				: keywordType + "?";
+		}
+
+		if (type.Name == "Nullable`1" && type is GenericInstanceType gen && gen.GenericArguments.Count == 1)
+		{
+			return GetTypeReference(gen.GenericArguments[0], attributes) + "?";
 		}
 
 		// For other types, use the full name
@@ -391,6 +387,31 @@ public class GeneratePublicApiFiles : Task
 
 		return type.FullName.Replace("/", ".");
 	}
+
+	private static bool HasNullable(ICollection<CustomAttribute>? attributes) =>
+		attributes?.Any(a => a.AttributeType.FullName == "System.Runtime.CompilerServices.NullableAttribute") ?? false;
+
+	private static string? GetKeywordType(TypeReference type) =>
+		type.FullName switch
+		{
+			"System.Void" => "void",
+			"System.Boolean" => "bool",
+			"System.Byte" => "byte",
+			"System.SByte" => "sbyte",
+			"System.Char" => "char",
+			"System.Decimal" => "decimal",
+			"System.Double" => "double",
+			"System.Single" => "float",
+			"System.Int32" => "int",
+			"System.UInt32" => "uint",
+			"System.Int64" => "long",
+			"System.UInt64" => "ulong",
+			"System.Int16" => "short",
+			"System.UInt16" => "ushort",
+			"System.Object" => "object",
+			"System.String" => "string",
+			_ => null,
+		};
 
 	private string FormatConstantValue(object value)
 	{
