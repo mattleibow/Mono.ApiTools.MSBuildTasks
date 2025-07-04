@@ -65,12 +65,28 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 
 		bool IBuildEngine.BuildProjectFile(string projectFileName, string[] targetNames, IDictionary globalProperties, IDictionary targetOutputs) => throw new NotImplementedException();
 
-		void IBuildEngine.LogCustomEvent(CustomBuildEventArgs e) => LogCustomEvents.Add(e);
+		void IBuildEngine.LogCustomEvent(CustomBuildEventArgs e)
+		{
+			Output.WriteLine($"CUSTOM: {e.Message}");
+			LogCustomEvents.Add(e);
+		}
 
-		void IBuildEngine.LogErrorEvent(BuildErrorEventArgs e) => LogErrorEvents.Add(e);
+		void IBuildEngine.LogErrorEvent(BuildErrorEventArgs e)
+		{
+			Output.WriteLine($"ERROR: {e.Message}");
+			LogErrorEvents.Add(e);
+		}
 
-		void IBuildEngine.LogMessageEvent(BuildMessageEventArgs e) => LogMessageEvents.Add(e);
+		void IBuildEngine.LogMessageEvent(BuildMessageEventArgs e)
+		{
+			Output.WriteLine($"MESSAGE: {e.Message}");
+			LogMessageEvents.Add(e);
+		}
 
-		void IBuildEngine.LogWarningEvent(BuildWarningEventArgs e) => LogWarningEvents.Add(e);
+		void IBuildEngine.LogWarningEvent(BuildWarningEventArgs e)
+		{
+			Output.WriteLine($"WARNING: {e.Message}");
+			LogWarningEvents.Add(e);
+		}
 	}
 }

@@ -1,7 +1,11 @@
+#pragma warning disable RS0041
+
 namespace Mono.ApiTools.MSBuildTasks.Tests.TestAssembly;
 
 public class AllTheThings
 {
+	internal int InternalField;
+
     public int IntField;
 
     public int? NullableIntField;
@@ -15,6 +19,34 @@ public class AllTheThings
     public string? NullableStringReturn() => throw new NotImplementedException();
 
     public string? BasicMethodReturning(int param1, string param2) => throw new NotImplementedException();
+
+#nullable disable
+        public string ObliviousMethod(int param1, string param2) => throw new NotImplementedException();
+    public
+#nullable enable
+        string
+#nullable disable
+        ObliviousMethodNullableReturn(
+        int param1,
+        string param2
+        ) => throw new NotImplementedException();
+    public
+        string
+        ObliviousMethodNullableValueParam(
+#nullable enable
+        int param1,
+#nullable disable
+        string param2
+        ) => throw new NotImplementedException();
+    public
+        string
+        ObliviousMethodNullableRefParam(
+        int param1,
+#nullable enable
+        string param2
+#nullable disable
+        ) => throw new NotImplementedException();
+#nullable enable
 
     public void BasicMethodVoid(int param1, string param2) => throw new NotImplementedException();
 
@@ -34,3 +66,12 @@ public class AllTheThings
 
     public void MethodWithParamsAndOptional(string? optional = null, params string[] strings) => throw new NotImplementedException();
 }
+
+internal class InternalClass
+{
+	public int InternalField;
+}
+
+public record class RecordClass;
+
+public record struct RecordStruct;

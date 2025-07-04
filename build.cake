@@ -42,7 +42,6 @@ Task("Pack")
             .WithProperty("Version", assemblyVersion)
             .WithProperty("FileVersion", fileVersion)
             .WithProperty("InformationalVersion", infoVersion)
-            .WithProperty("PackageOutputPath", MakeAbsolute((DirectoryPath)"./output/").FullPath)
             .WithProperty("PackageVersion", prerelease ? previewVersion : packageVersion)
     };
 

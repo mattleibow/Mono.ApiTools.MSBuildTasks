@@ -5,6 +5,7 @@
 		<IsPackable>false</IsPackable>
 		<IsTestProject>true</IsTestProject>
 		<RollForward>LatestMajor</RollForward>
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -40,5 +41,9 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Mono.ApiTools.MSBuildTasks\Mono.ApiTools.MSBuildTasks.csproj" />
 	</ItemGroup>
+
+	<Target Name="CopyFrameworkAssemblies" AfterTargets="Build">
+		<Copy SourceFiles="@(ReferencePathWithRefAssemblies)" DestinationFolder="$(OutputPath)TestRefAssemblies" SkipUnchangedFiles="true" />
+	</Target>
 
 </Project>
