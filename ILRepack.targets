@@ -12,7 +12,7 @@
 		</ItemGroup>
 		<PropertyGroup>
 			<_ILRepackArgs>/out:&quot;$(IntermediateOutputPath)$(AssemblyName).dll&quot;</_ILRepackArgs>
-			<_ILRepackArgs>$(_ILRepackArgs) /internalize /verbose</_ILRepackArgs>
+			<_ILRepackArgs>$(_ILRepackArgs) /internalize</_ILRepackArgs>
 			<_ILRepackArgs>$(_ILRepackArgs) &quot;$(IntermediateOutputPath)$(AssemblyName).dll&quot;</_ILRepackArgs>
 			<_ILRepackArgs>$(_ILRepackArgs) @(ILRepackInputAssemblies->'"%(Identity)"', ' ')</_ILRepackArgs>
 			<_ILRepackWorking>@(_ILRepackNetStandard)</_ILRepackWorking>
