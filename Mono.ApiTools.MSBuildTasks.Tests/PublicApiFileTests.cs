@@ -2,11 +2,20 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Xunit;
+using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace Mono.ApiTools.MSBuildTasks.Tests;
 
 public class PublicApiFileTests
 {
+	public PublicApiFileTests(ITestOutputHelper output)
+    {
+        Output = output;
+    }
+        
+	public ITestOutputHelper Output { get; }
+
     private string CreateTempFile(IEnumerable<string> lines)
     {
         var path = Path.GetTempFileName();
@@ -136,16 +145,24 @@ public class PublicApiFileTests
         // Arrange
         var shipped = new PublicApiFile();
         shipped.LoadShippedPublicApiFile(CreateTempFile(["A", "B"]));
+        Output.WriteLine("Shipped API:");
+        Output.WriteLine(string.Join(Environment.NewLine, shipped.ToFileContents()));
+
         var current = new PublicApiFile();
         current.LoadShippedPublicApiFile(CreateTempFile(["A", "C"]));
+        Output.WriteLine("Current API:");
+        Output.WriteLine(string.Join(Environment.NewLine, current.ToFileContents()));
 
         // Act
         var diff = current.GenerateUnshippedPublicApiFile(shipped);
+        Output.WriteLine("Unshipped API:");
+        Output.WriteLine(string.Join(Environment.NewLine, diff.ToFileContents()));
 
         // Assert
-        Assert.Contains("B", diff.PublicApis);
-        Assert.Contains("*REMOVED*C", diff.PublicApis);
-        Assert.DoesNotContain("A", diff.PublicApis);
+        Assert.DoesNotContain("A", diff.PublicApis);    // unchanged so not listed
+        Assert.Contains("*REMOVED*B", diff.PublicApis); // removed
+        Assert.DoesNotContain("B", diff.PublicApis);    // removed
+        Assert.Contains("C", diff.PublicApis);          // added
     }
 
     [Fact]

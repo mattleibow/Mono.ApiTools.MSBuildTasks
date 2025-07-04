@@ -125,14 +125,22 @@ public class PublicApiFile
 
 	public void Save(string unshippedPublicApiPath)
 	{
-		var lines = publicApis.ToList();
-		if (HasNullableEnable)
-			lines.Insert(0, NullableEnableString);
+		var lines = ToFileContents();
 
 		var directory = Path.GetDirectoryName(unshippedPublicApiPath);
 		Directory.CreateDirectory(directory);
 
 		File.WriteAllLines(unshippedPublicApiPath, lines, Encoding.UTF8);
+	}
+
+	public List<string> ToFileContents()
+	{
+		var lines = publicApis.ToList();
+
+		if (HasNullableEnable)
+			lines.Insert(0, NullableEnableString);
+
+		return lines;
 	}
 
 	private void CollectNamespaceTypes(INamespaceSymbol namespaceSymbol, IAssemblySymbol assemblySymbol)
