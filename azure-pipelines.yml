@@ -11,7 +11,7 @@ variables:
   PACKAGE_VERSION: $(BASE_VERSION).$(BUILD_NUMBER)
   CONFIGURATION: 'release'
   BUILD_PRERELEASE: false
-  DOTNET_CORE_VERSION: 8.x
+  DOTNET_CORE_VERSION: 9.x
 
 steps:
   - task: UseDotNet@2
