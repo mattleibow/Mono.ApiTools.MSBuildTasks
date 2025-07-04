@@ -9,7 +9,7 @@ variables:
   BASE_VERSION: 0.4.0
   BUILD_NUMBER: $[counter(format('{0}_{1}', variables['BASE_VERSION'], variables['Build.SourceBranch']), 1)]
   PACKAGE_VERSION: $(BASE_VERSION).$(BUILD_NUMBER)
-  CONFIGURATION: 'Release'
+  CONFIGURATION: 'release'
   BUILD_PRERELEASE: false
   DOTNET_CORE_VERSION: 8.x
 
@@ -23,7 +23,7 @@ steps:
     displayName: Restore .NET tools
   - pwsh: dotnet cake --configuration="$(CONFIGURATION)" --packageVersion="$(PACKAGE_VERSION)" --prerelease="$(BUILD_PRERELEASE)"
     displayName: Build, pack and test everything
-  - publish: output
+  - publish: artifacts/package/release
     artifact: nuget
     displayName: Upload artifacts
   - task: PublishTestResults@2
