@@ -6,15 +6,16 @@
 		Inputs="$(MSBuildAllProjects);$(IntermediateOutputPath)$(AssemblyName).dll;@(ILRepackInputAssemblies)"
 		Outputs="$(IntermediateOutputPath)ILRepacker.stamp" >
 		<ItemGroup>
-			<_NetstandardPath Include="@(ReferencePath->'%(RootDir)%(Directory)')" Condition="'%(FileName)%(Extension)' == 'netstandard.dll'" />
+			<_ILRepackReferences Include="@(ReferencePath->'%(RootDir)%(Directory)')" Condition="'%(FileName)%(Extension)' == 'netstandard.dll'" />
+			<_ILRepackReferences Include="@(ReferencePath->'%(RootDir)%(Directory)')" Condition="'%(FileName)%(Extension)' == 'Microsoft.Build.Framework.dll'" />
+			<_ILRepackReferences Include="@(ReferencePath->'%(RootDir)%(Directory)')" Condition="'%(FileName)%(Extension)' == 'Microsoft.Build.Utilities.Core.dll'" />
 		</ItemGroup>
 		<PropertyGroup>
-			<_NetstandardDir>@(_NetstandardPath)</_NetstandardDir>
 			<_ILRepackArgs>/out:&quot;$(IntermediateOutputPath)$(AssemblyName).dll&quot;</_ILRepackArgs>
-			<_ILRepackArgs>$(_ILRepackArgs) /internalize</_ILRepackArgs>
+			<_ILRepackArgs>$(_ILRepackArgs) /internalize /verbose</_ILRepackArgs>
 			<_ILRepackArgs>$(_ILRepackArgs) &quot;$(IntermediateOutputPath)$(AssemblyName).dll&quot;</_ILRepackArgs>
 			<_ILRepackArgs>$(_ILRepackArgs) @(ILRepackInputAssemblies->'"%(Identity)"', ' ')</_ILRepackArgs>
-			<_ILRepackArgs>$(_ILRepackArgs) /lib:&quot;$(_NetstandardDir.TrimEnd('\'))&quot;</_ILRepackArgs>
+			<_ILRepackArgs>$(_ILRepackArgs) @(_ILRepackReferences->'/lib:"%(Identity)"', ' ')</_ILRepackArgs>
 		</PropertyGroup>
 		<Exec Command="dotnet ilrepack $(_ILRepackArgs)" WorkingDirectory="$(TargetDir)" />
 		<Touch Files="$(IntermediateOutputPath)ILRepacker.stamp" AlwaysCreate="True" />
