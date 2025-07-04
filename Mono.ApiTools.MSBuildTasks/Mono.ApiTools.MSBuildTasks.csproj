@@ -5,7 +5,7 @@
 		<Nullable>enable</Nullable>
 		<LangVersion>latest</LangVersion>
 		<IncludeBuildOutput>False</IncludeBuildOutput>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<!-- <GeneratePackageOnBuild>true</GeneratePackageOnBuild> -->
 		<ImplicitUsings>true</ImplicitUsings>
 	</PropertyGroup>
 
