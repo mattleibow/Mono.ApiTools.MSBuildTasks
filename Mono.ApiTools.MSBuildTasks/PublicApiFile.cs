@@ -170,12 +170,7 @@ public class PublicApiFile
 			// collect the members of the type
 			foreach (var member in type.GetMembers())
 			{
-				// properties are not mapped, the get and set methods are used instead
-				if (member is IPropertySymbol)
-					continue;
-
-				// events are mapped via the main event, not the add/remove methods
-				if (member is IMethodSymbol method && method.AssociatedSymbol is IEventSymbol)
+				if (!ShouldCollect(member))
 					continue;
 
 				// collect the member
@@ -233,6 +228,66 @@ public class PublicApiFile
 		return publicApiName;
 	}
 
+
+	private bool ShouldCollect(ISymbol symbol)
+	{
+		// properties are not mapped, the get and set methods are used instead
+		if (symbol is IPropertySymbol)
+			return false;
+
+		if (symbol is IMethodSymbol methodSymbol)
+		{
+			// events are mapped via the main event, not the add/remove methods
+			if (methodSymbol is { AssociatedSymbol: IEventSymbol })
+				return false;
+
+			// enums don't have a constructor
+			if (methodSymbol is { MethodKind: MethodKind.Constructor, ContainingType.TypeKind: TypeKind.Enum })
+				return false;
+
+			// only include a delegate's 'Invoke' in order to track the signature, the rest can be skipped
+			if (methodSymbol is { ContainingType.TypeKind: TypeKind.Delegate, MethodKind: not MethodKind.DelegateInvoke })
+				return false;
+		}
+
+		return ShouldCollectRecursive(symbol);
+	}
+
+	public static bool ShouldCollectRecursive(ISymbol symbol)
+	{
+		switch (symbol.Kind)
+		{
+			// aliases are uber private - they're only visible in the same file that they were declared in
+			case SymbolKind.Alias:
+				return false;
+
+			// parameters are only as visible as their containing symbol
+			case SymbolKind.Parameter:
+				return ShouldCollectRecursive(symbol.ContainingSymbol);
+
+			// type parameters are private
+			case SymbolKind.TypeParameter:
+				return false;
+		}
+
+		while (symbol != null && symbol.Kind != SymbolKind.Namespace)
+		{
+			switch (symbol.DeclaredAccessibility)
+			{
+				// if anything is private or internal, then it is not collected
+				case Accessibility.NotApplicable:
+				case Accessibility.Private:
+				case Accessibility.Internal:
+				case Accessibility.ProtectedAndInternal:
+					return false;
+			}
+
+			symbol = symbol.ContainingSymbol;
+		}
+
+		return true;
+	}
+
 	private bool IsOblivious(ISymbol symbol) =>
 		symbol switch
 		{
@@ -273,15 +328,21 @@ public class PublicApiFile
 	{
 		public static readonly Comparer Instance = new Comparer();
 
-		public int Compare(string? x, string? y)
+		public int Compare(string? x, string? y) =>
+			StringComparer.Ordinal.Compare(WithoutPrefixes(x), WithoutPrefixes(y));
+
+		private static string WithoutPrefixes(string? api)
 		{
-			if (x?.StartsWith(RemovedPrefix) == true)
-				x = x.Substring(RemovedPrefix.Length);
+			if (api is null || string.IsNullOrWhiteSpace(api))
+				return string.Empty;
 
-			if (y?.StartsWith(RemovedPrefix) == true)
-				y = y.Substring(RemovedPrefix.Length);
+			if (api.StartsWith(RemovedPrefix))
+				api = api.Substring(RemovedPrefix.Length);
 
-			return StringComparer.Ordinal.Compare(x, y);
+			if (api.StartsWith(ObliviousPrefix))
+				api = api.Substring(ObliviousPrefix.Length);
+
+			return api;
 		}
 	}
 }

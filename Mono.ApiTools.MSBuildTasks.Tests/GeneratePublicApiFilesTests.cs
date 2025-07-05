@@ -216,12 +216,6 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 
 	private const string ExpectedFullApiContent = """
 		#nullable enable
-		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.ObliviousMethod(int param1, string param2) -> string
-		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.ObliviousMethodNullableRefParam(int param1, string! param2) -> string
-		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.ObliviousMethodNullableReturn(int param1, string param2) -> string!
-		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.ObliviousMethodNullableValueParam(int param1, string param2) -> string
-		~override Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordStruct.Equals(object obj) -> bool
-		~override Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordStruct.ToString() -> string
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.AllTheThings() -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.BasicMethodReturning(int param1, string! param2) -> string?
@@ -235,15 +229,24 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.NullableIntField -> int?
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.NullableStringField -> string?
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.NullableStringReturn() -> string?
+		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.ObliviousMethod(int param1, string param2) -> string
+		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.ObliviousMethodNullableRefParam(int param1, string! param2) -> string
+		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.ObliviousMethodNullableReturn(int param1, string param2) -> string!
+		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.ObliviousMethodNullableValueParam(int param1, string param2) -> string
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.SetOnlyProperty.set -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.StringField -> string!
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.StringReturn() -> string!
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.TestLocalDelegates() -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.this[int index, string? name].get -> int
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.this[int index].get -> int
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.WithReferencing(in int inParam, ref int refParam, out int outParam) -> string?
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing.Amazing() -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing.AmazingMethod() -> string!
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.DelegateThing
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing.First = 0 -> Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing.Second = 1 -> Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorEvent -> System.EventHandler?
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorField -> bool
@@ -318,11 +321,14 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 		override Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.Equals(object? obj) -> bool
 		override Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.GetHashCode() -> int
 		override Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.ToString() -> string!
+		~override Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordStruct.Equals(object obj) -> bool
 		override Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordStruct.GetHashCode() -> int
+		~override Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordStruct.ToString() -> string
 		static Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.operator !=(Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass? left, Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass? right) -> bool
 		static Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.operator ==(Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass? left, Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass? right) -> bool
 		static Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordStruct.operator !=(Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordStruct left, Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordStruct right) -> bool
 		static Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordStruct.operator ==(Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordStruct left, Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordStruct right) -> bool
+		virtual Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.DelegateThing.Invoke(string! param1, int param2) -> string!
 		virtual Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.<Clone>$() -> Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass!
 		virtual Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.EqualityContract.get -> System.Type!
 		virtual Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.Equals(Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass? other) -> bool
@@ -331,12 +337,6 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 
 	private const string TestPartialShippedApiContent = """
 		#nullable enable
-		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.ObliviousMethod(int param1, string param2) -> string
-		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.ObliviousMethodNullableRefParam(int param1, string! param2) -> string
-		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.ObliviousMethodNullableReturn(int param1, string param2) -> string!
-		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.ObliviousMethodNullableValueParam(int param1, string param2) -> string
-		~override Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordStruct.Equals(object obj) -> bool
-		~override Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordStruct.ToString() -> string
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.AllTheThings() -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.BasicMethodReturning(int param1, string! param2) -> string?
@@ -350,12 +350,21 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.NullableIntField -> int?
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.NullableStringField -> string?
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.NullableStringReturn() -> string?
+		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.ObliviousMethod(int param1, string param2) -> string
+		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.ObliviousMethodNullableRefParam(int param1, string! param2) -> string
+		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.ObliviousMethodNullableReturn(int param1, string param2) -> string!
+		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.ObliviousMethodNullableValueParam(int param1, string param2) -> string
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.SetOnlyProperty.set -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.StringField -> string!
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.StringReturn() -> string!
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.TestLocalDelegates() -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.this[int index, string? name].get -> int
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.this[int index].get -> int
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.WithReferencing(in int inParam, ref int refParam, out int outParam) -> string?
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.DelegateThing
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing.First = 0 -> Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing.Second = 1 -> Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorEvent -> System.EventHandler?
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorField -> bool
@@ -430,11 +439,14 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 		override Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.Equals(object? obj) -> bool
 		override Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.GetHashCode() -> int
 		override Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.ToString() -> string!
+		~override Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordStruct.Equals(object obj) -> bool
 		override Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordStruct.GetHashCode() -> int
+		~override Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordStruct.ToString() -> string
 		static Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.operator !=(Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass? left, Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass? right) -> bool
 		static Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.operator ==(Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass? left, Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass? right) -> bool
 		static Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordStruct.operator !=(Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordStruct left, Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordStruct right) -> bool
 		static Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordStruct.operator ==(Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordStruct left, Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordStruct right) -> bool
+		virtual Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.DelegateThing.Invoke(string! param1, int param2) -> string!
 		virtual Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.<Clone>$() -> Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass!
 		virtual Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.EqualityContract.get -> System.Type!
 		virtual Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.Equals(Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass? other) -> bool
