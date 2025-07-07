@@ -79,15 +79,21 @@ public class PublicApiFile
 		nonNullablePublicApis.Sort(Comparer.Instance);
 	}
 
-	public void LoadShippedPublicApiFile(string shippedPublicApiPath)
+	public void LoadShippedPublicApiFile(string publicApiPath) =>
+		LoadPublicApiFile(publicApiPath, preserveRemovedItems: false);
+
+	public void LoadUnshippedPublicApiFile(string publicApiPath) =>
+		LoadPublicApiFile(publicApiPath, preserveRemovedItems: true);
+
+	public void LoadPublicApiFile(string publicApiPath, bool preserveRemovedItems)
 	{
 		HasNullableEnable = true;
 		nullablePublicApis.Clear();
 		nonNullablePublicApis.Clear();
 
-		var lines = File.ReadAllLines(shippedPublicApiPath);
+		var lines = File.ReadAllLines(publicApiPath);
 		var cleanedLines = lines
-			.Where(line => !string.IsNullOrWhiteSpace(line) && !line.StartsWith(RemovedPrefix))
+			.Where(line => !string.IsNullOrWhiteSpace(line) && (preserveRemovedItems || !line.StartsWith(RemovedPrefix)))
 			.Select(line => line.Trim())
 			.Distinct()
 			.ToList();
@@ -121,6 +127,47 @@ public class PublicApiFile
 		diff.publicApis.Sort(Comparer.Instance);
 
 		return diff;
+	}
+
+	public bool IsEquivalentTo(PublicApiFile unshippedPublicApiFile)
+	{
+		var currentItems = GetLines(this);
+		var unshippedItems = GetLines(unshippedPublicApiFile);
+
+		if (currentItems.Count != unshippedItems.Count)
+			return false;
+
+		if (!currentItems.SequenceEqual(unshippedItems, StringComparer.Ordinal))
+			return false;
+
+		return true;
+
+		static List<string> GetLines(PublicApiFile file) =>
+			file.publicApis
+				.Where(api => !string.IsNullOrWhiteSpace(api))
+				.Select(api =>
+				{
+					var newApi = api.Trim();
+
+					// The oblivious marker is more for a visual indication to us that it is missing nullability
+					// and the actual API will differ if it needs to.
+					//
+					// For example:
+					// For types:
+					//   If the type is `My.Namespace.MyType`, then oblivious or not, it is the same type and the
+					//   "oblivious" version is exactly the same.
+					// For methods:
+					//   If the method is `My.Namespace.MyType.MyMethod() -> void`, then oblivious or not, it
+					//   is also the same.
+					//   But, if the method is `My.Namespace.MyType.MyMethod() -> string`, then the NON oblivious
+					//   version is different: `My.Namespace.MyType.MyMethod() -> string!`.
+					if (newApi.StartsWith(ObliviousPrefix))
+						newApi = newApi.Substring(ObliviousPrefix.Length).Trim();
+
+					return newApi;
+				})
+				.OrderBy(api => api, StringComparer.Ordinal)
+				.ToList();
 	}
 
 	public void Save(string unshippedPublicApiPath)

@@ -86,9 +86,19 @@ public class GeneratePublicApiFiles : Microsoft.Build.Utilities.Task
 		// Generate and write unshipped file if specified
 		if (unshippedFile != null)
 		{
-			var unshippedPublicApiFile = publicApiFile.GenerateUnshippedPublicApiFile(shippedPublicApiFile);
-			unshippedPublicApiFile.Save(unshippedFile.ItemSpec);
-			Log.LogMessage($"Generated unshipped API file: {unshippedFile.ItemSpec} with {unshippedPublicApiFile.Count} entries");
+			var unshippedPublicApiFile = new PublicApiFile();
+			unshippedPublicApiFile.LoadUnshippedPublicApiFile(unshippedFile.ItemSpec);
+
+			var generatedPublicApiFile = publicApiFile.GenerateUnshippedPublicApiFile(shippedPublicApiFile);
+			if (!generatedPublicApiFile.IsEquivalentTo(unshippedPublicApiFile))
+			{
+				generatedPublicApiFile.Save(unshippedFile.ItemSpec);
+				Log.LogMessage($"Generated unshipped API file: {unshippedFile.ItemSpec} with {generatedPublicApiFile.Count} entries");
+			}
+			else
+			{
+				Log.LogMessage($"No changes detected in unshipped API file: {unshippedFile.ItemSpec}");
+			}
 		}
 
 		return !Log.HasLoggedErrors;

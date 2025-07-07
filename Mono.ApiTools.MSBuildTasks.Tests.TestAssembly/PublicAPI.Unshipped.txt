@@ -12,10 +12,6 @@ Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.MethodWithParamsAndOp
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.NullableIntField -> int?
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.NullableStringField -> string?
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.NullableStringReturn() -> string?
-~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.ObliviousMethod(int param1, string param2) -> string
-~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.ObliviousMethodNullableRefParam(int param1, string! param2) -> string
-~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.ObliviousMethodNullableReturn(int param1, string param2) -> string!
-~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.ObliviousMethodNullableValueParam(int param1, string param2) -> string
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.SetOnlyProperty.set -> void
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.StringField -> string!
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.StringReturn() -> string!
@@ -30,6 +26,12 @@ Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.DelegateThing
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing.First = 0 -> Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing.Second = 1 -> Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass.ObliviousClass() -> void
+~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass.ObliviousMethod(int param1, string param2) -> string
+~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass.ObliviousMethodNullableRefParam(int param1, string! param2) -> string
+~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass.ObliviousMethodNullableReturn(int param1, string param2) -> string!
+~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass.ObliviousMethodNullableValueParam(int param1, string param2) -> string
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorEvent -> System.EventHandler?
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorField -> bool
