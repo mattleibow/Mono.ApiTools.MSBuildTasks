@@ -269,8 +269,12 @@ public class PublicApiFile
 		if (experimentName != null)
 			publicApiName = "[" + experimentName + "]" + publicApiName;
 
-		if (IsOblivious(symbol))
+		var oblivious = IsOblivious(symbol);
+		if (oblivious.IsOblivious)
+		{
 			publicApiName = ObliviousPrefix + publicApiName;
+			// publicApiName += $" (oblivious: {oblivious.Reason})";
+		}
 
 		return publicApiName;
 	}
@@ -335,41 +339,120 @@ public class PublicApiFile
 		return true;
 	}
 
-	private bool IsOblivious(ISymbol symbol) =>
+	private static (bool IsOblivious, string Reason) IsOblivious(ISymbol symbol) =>
 		symbol switch
 		{
+			// e.g. public class SomeType
 			INamedTypeSymbol { Kind: SymbolKind.NamedType } namedType => IsObliviousTypeDeclaration(namedType),
+			// e.g. public SomeType FieldName
 			IFieldSymbol field => IsObliviousField(field),
+			// e.g. public void SomeMethod() or events or properties
 			IMethodSymbol method => IsObliviousMethod(method),
-			IArrayTypeSymbol array => IsObliviousArray(array),
-			ITypeSymbol type => IsObliviousType(type),
-			_ => false
+			_ => default
 		};
 
-	private static bool IsObliviousField(IFieldSymbol field) =>
-		IsObliviousType(field.Type);
+	private static (bool IsOblivious, string Reason) IsObliviousField(IFieldSymbol field)
+	{
+		var fieldType = IsObliviousTypeReference(field.Type);
+		if (fieldType.IsOblivious)
+			return (true, $"Field type is oblivious: {fieldType.Reason}");
+		return default;
+	}
 
-	private static bool IsObliviousMethod(IMethodSymbol method) =>
-		IsObliviousType(method.ReturnType) || method.Parameters.Any(p => IsObliviousType(p.Type)); // TODO: type parameters
+	private static (bool IsOblivious, string Reason) IsObliviousMethod(IMethodSymbol method)
+	{
+		var retType = IsObliviousTypeReference(method.ReturnType);
+		if (retType.IsOblivious)
+			return (true, $"Return type is oblivious: {retType.Reason}");
 
-	private static bool IsObliviousTypeDeclaration(INamedTypeSymbol type) => false; // TODO: type parameters
+		foreach (var param in method.Parameters)
+		{
+			var paramType = IsObliviousTypeReference(param.Type);
+			if (paramType.IsOblivious)
+				return (true, $"Parameter {param.Name} type is oblivious: {paramType.Reason}");
+		}
 
-	private static bool IsObliviousType(ITypeSymbol type)
+		foreach (var param in method.TypeParameters)
+		{
+			var paramType = IsObliviousTypeParameter(param);
+			if (paramType.IsOblivious)
+				return (true, $"Generic type parameter {param.Name} is oblivious: {paramType.Reason}");
+		}
+
+		return default;
+	}
+
+	private static (bool IsOblivious, string Reason) IsObliviousTypeDeclaration(INamedTypeSymbol type)
+	{
+		foreach (var param in type.TypeParameters)
+		{
+			var paramType = IsObliviousTypeParameter(param);
+			if (paramType.IsOblivious)
+				return (true, $"Generic type parameter {param.Name} is oblivious: {paramType.Reason}");
+		}
+
+		return default;
+	}
+
+	private static (bool IsOblivious, string Reason) IsObliviousTypeReference(ITypeSymbol type)
 	{
 		// Check if the type is a ref type and has no nullability annotations
 		if (type.IsReferenceType && type.NullableAnnotation == NullableAnnotation.None)
-			return true;
+			return (true, "Type was oblivious");
+
+		if (type is IArrayTypeSymbol arrayType)
+		{
+			var array = IsObliviousArray(arrayType);
+			if (array.IsOblivious)
+				return (true, $"Array is oblivious: {array.Reason}");
+		}
 
 		// TODO: containing types
 
+		// Check if the type arguments have no nullability annotations
 		if (type is INamedTypeSymbol namedType)
-			return namedType.TypeArguments.Any(a => IsObliviousType(a));
+		{
+			foreach (var arg in namedType.TypeArguments)
+			{
+				var typeRef = IsObliviousTypeReference(arg);
+				if (typeRef.IsOblivious)
+					return (true, $"Type argument {arg.Name} is oblivious: {typeRef.Reason}");
+			}
+		}
 
-		return false;
+		return default;
 	}
 
-	private static bool IsObliviousArray(IArrayTypeSymbol array) =>
-		array.NullableAnnotation == NullableAnnotation.None || IsObliviousType(array.ElementType);
+	private static (bool IsOblivious, string Reason) IsObliviousArray(IArrayTypeSymbol array)
+	{
+		if (array.NullableAnnotation == NullableAnnotation.None)
+			return (true, "Array is oblivious");
+
+		var elementType = IsObliviousTypeReference(array.ElementType);
+		if (elementType.IsOblivious)
+			return (true, $"Array element type is oblivious: {elementType.Reason}");
+
+		return default;
+	}
+
+	private static (bool IsOblivious, string Reason) IsObliviousTypeParameter(ITypeParameterSymbol typeParam)
+	{
+		// Check if the type is a ref type and has no nullability annotations
+		// e.g. where T : class~
+		if (typeParam.HasReferenceTypeConstraint && typeParam.ReferenceTypeConstraintNullableAnnotation == NullableAnnotation.None)
+			return (true, "Type parameter is oblivious");
+
+		// Check if the constraints have no nullability annotations
+		// e.g. where T : SomeReferenceType~
+		foreach (var constraint in typeParam.ConstraintTypes)
+		{
+			var constraintType = IsObliviousTypeReference(constraint);
+			if (constraintType.IsOblivious)
+				return (true, $"Constraint {constraint.Name} is oblivious: {constraintType.Reason}");
+		}
+
+		return default;
+	}
 
 	private class Comparer : IComparer<string>
 	{

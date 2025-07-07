@@ -1,6 +1,6 @@
-#pragma warning disable RS0041
-
 #nullable disable
+
+#pragma warning disable RS0041
 
 namespace Mono.ApiTools.MSBuildTasks.Tests.TestAssembly;
 

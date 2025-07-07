@@ -89,12 +89,15 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 		var expectedContent =
 			"""
 			#nullable enable
+			~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.IObliviousGenericInterface<T>
 			Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass
 			Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass.ObliviousClass() -> void
 			~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass.ObliviousMethod(int param1, string param2) -> string
 			~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass.ObliviousMethodNullableRefParam(int param1, string! param2) -> string
 			~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass.ObliviousMethodNullableReturn(int param1, string param2) -> string!
 			~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass.ObliviousMethodNullableValueParam(int param1, string param2) -> string
+			~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousGenericClass<T>
+			~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousGenericClass<T>.ObliviousGenericClass(T instance) -> void
 
 			""";
 		var afterShipped = ReadPublicApi(shipped.Path);
@@ -299,12 +302,15 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing.First = 0 -> Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing.Second = 1 -> Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
+		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.IObliviousGenericInterface<T>
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass.ObliviousClass() -> void
 		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass.ObliviousMethod(int param1, string param2) -> string
 		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass.ObliviousMethodNullableRefParam(int param1, string! param2) -> string
 		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass.ObliviousMethodNullableReturn(int param1, string param2) -> string!
 		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass.ObliviousMethodNullableValueParam(int param1, string param2) -> string
+		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousGenericClass<T>
+		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousGenericClass<T>.ObliviousGenericClass(T instance) -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorEvent -> System.EventHandler?
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorField -> bool
@@ -536,12 +542,15 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing.First = 0 -> Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing.Second = 1 -> Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
+		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.IObliviousGenericInterface<T>
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass.ObliviousClass() -> void
 		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass.ObliviousMethod(int param1, string param2) -> string
 		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass.ObliviousMethodNullableRefParam(int param1, string! param2) -> string
 		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass.ObliviousMethodNullableReturn(int param1, string param2) -> string!
 		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass.ObliviousMethodNullableValueParam(int param1, string param2) -> string
+		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousGenericClass<T>
+		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousGenericClass<T>.ObliviousGenericClass(T instance) -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorEvent -> System.EventHandler?
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorField -> bool
