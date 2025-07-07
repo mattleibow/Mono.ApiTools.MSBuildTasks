@@ -26,52 +26,65 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 			BuildEngine = this,
 		};
 
-	[Fact]
-	public void GeneratesUnshippedApiFileWithNoChanges()
+	private (DateTime Time, string Path) WritePublicApi(string fileName, string contents)
 	{
-		CopyTestFiles("Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll");
-		WriteFile("PublicAPI.Shipped.txt", ExpectedFullApiContent);
-		WriteFile("PublicAPI.Unshipped.txt", "#nullable enable");
+		var filePath = WriteFile(fileName, contents);
+		var fileTime = File.GetLastWriteTime(filePath);
+		return (fileTime, filePath);
+	}
 
-		var unshippedPath = Path.Combine(DestinationDirectory, "PublicAPI.Unshipped.txt");
-
-		var task = GetNewTask();
-		var success = task.Execute();
-
-		Assert.True(success, $"{task.GetType()}.Execute() failed.");
-		Assert.True(File.Exists(unshippedPath), "PublicAPI.Unshipped.txt file should be created");
-
-		var actualContent = File.ReadAllText(unshippedPath);
-
-		var expectedContent = "#nullable enable";
-
-		Output.WriteLine("Actual Unshipped API Content:");
-		Output.WriteLine(actualContent);
-		Output.WriteLine("Expected Unshipped API Content:");
-		Output.WriteLine(expectedContent);
-
-		Assert.Equal(expectedContent, actualContent);
+	private (DateTime Time, string Content) ReadPublicApi(string fileName)
+	{
+		var filePath = Path.Combine(DestinationDirectory, fileName);
+		var fileTime = File.GetLastWriteTime(filePath);
+		var content = File.ReadAllText(filePath);
+		return (fileTime, content);
 	}
 
 	[Fact]
-	public void GeneratesUnshippedApiFileWithOnlyObliviousApis()
+	public void GeneratesUnshippedApiFile_WithNoChanges()
 	{
 		CopyTestFiles("Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll");
-		WriteFile("PublicAPI.Unshipped.txt", "#nullable enable");
+		var unshipped = WritePublicApi("PublicAPI.Unshipped.txt", "#nullable enable");
 
-		// Create a shipped file with a subset of APIs
-		var shippedApis = TestPartialWithoutObliviousShippedApiContent;
-		WriteFile("PublicAPI.Shipped.txt", shippedApis);
-
-		var unshippedPath = Path.Combine(DestinationDirectory, "PublicAPI.Unshipped.txt");
+		// Create a shipped file with the expected full API content
+		var shipped = WritePublicApi("PublicAPI.Shipped.txt", ExpectedFullApiContent);
 
 		var task = GetNewTask();
 		var success = task.Execute();
 
 		Assert.True(success, $"{task.GetType()}.Execute() failed.");
-		Assert.True(File.Exists(unshippedPath), "PublicAPI.Unshipped.txt file should be created");
 
-		var actualContent = File.ReadAllText(unshippedPath);
+		var expectedContent = "#nullable enable";
+		var afterShipped = ReadPublicApi(shipped.Path);
+		var afterUnshipped = ReadPublicApi(unshipped.Path);
+
+		{
+			Output.WriteLine("Actual Unshipped API Content:");
+			Output.WriteLine(afterUnshipped.Content);
+			Output.WriteLine("Expected Unshipped API Content:");
+			Output.WriteLine(expectedContent);
+		}
+
+		Assert.Equal(expectedContent, afterUnshipped.Content);
+		Assert.Equal(shipped.Time, afterShipped.Time);
+		Assert.Equal(unshipped.Time, afterUnshipped.Time);
+	}
+
+	[Fact]
+	public void GeneratesUnshippedApiFile_WithOnlyObliviousApis()
+	{
+		CopyTestFiles("Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll");
+		var unshipped = WritePublicApi("PublicAPI.Unshipped.txt", "#nullable enable");
+
+		// Create a shipped file with a subset of APIs
+		var shippedApis = TestPartialWithoutObliviousShippedApiContent;
+		var shipped = WritePublicApi("PublicAPI.Shipped.txt", shippedApis);
+
+		var task = GetNewTask();
+		var success = task.Execute();
+
+		Assert.True(success, $"{task.GetType()}.Execute() failed.");
 
 		var expectedContent =
 			"""
@@ -84,34 +97,35 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 			~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass.ObliviousMethodNullableValueParam(int param1, string param2) -> string
 
 			""";
+		var afterShipped = ReadPublicApi(shipped.Path);
+		var afterUnshipped = ReadPublicApi(unshipped.Path);
 
-		Output.WriteLine("Actual Unshipped API Content:");
-		Output.WriteLine(actualContent);
-		Output.WriteLine("Expected Unshipped API Content:");
-		Output.WriteLine(expectedContent);
+		{
+			Output.WriteLine("Actual Unshipped API Content:");
+			Output.WriteLine(afterUnshipped.Content);
+			Output.WriteLine("Expected Unshipped API Content:");
+			Output.WriteLine(expectedContent);
+		}
 
-		Assert.Equal(expectedContent, actualContent);
+		Assert.Equal(expectedContent, afterUnshipped.Content);
+		Assert.Equal(shipped.Time, afterShipped.Time);
+		Assert.True(unshipped.Time < afterUnshipped.Time);
 	}
 
 	[Fact]
-	public void GeneratesUnshippedApiFileWithOnlyNewApis()
+	public void GeneratesUnshippedApiFile_WithOnlyNewApis()
 	{
 		CopyTestFiles("Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll");
-		WriteFile("PublicAPI.Unshipped.txt", "#nullable enable");
+		var unshipped = WritePublicApi("PublicAPI.Unshipped.txt", "#nullable enable");
 
 		// Create a shipped file with a subset of APIs
 		var shippedApis = TestPartialShippedApiContent;
-		WriteFile("PublicAPI.Shipped.txt", shippedApis);
-
-		var unshippedPath = Path.Combine(DestinationDirectory, "PublicAPI.Unshipped.txt");
+		var shipped = WritePublicApi("PublicAPI.Shipped.txt", shippedApis);
 
 		var task = GetNewTask();
 		var success = task.Execute();
 
 		Assert.True(success, $"{task.GetType()}.Execute() failed.");
-		Assert.True(File.Exists(unshippedPath), "PublicAPI.Unshipped.txt file should be created");
-
-		var actualContent = File.ReadAllText(unshippedPath);
 
 		var expectedContent =
 			"""
@@ -121,20 +135,26 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 			Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing.AmazingMethod() -> string!
 
 			""";
+		var afterShipped = ReadPublicApi(shipped.Path);
+		var afterUnshipped = ReadPublicApi(unshipped.Path);
 
-		Output.WriteLine("Actual Unshipped API Content:");
-		Output.WriteLine(actualContent);
-		Output.WriteLine("Expected Unshipped API Content:");
-		Output.WriteLine(expectedContent);
+		{
+			Output.WriteLine("Actual Unshipped API Content:");
+			Output.WriteLine(afterUnshipped.Content);
+			Output.WriteLine("Expected Unshipped API Content:");
+			Output.WriteLine(expectedContent);
+		}
 
-		Assert.Equal(expectedContent, actualContent);
+		Assert.Equal(expectedContent, afterUnshipped.Content);
+		Assert.Equal(shipped.Time, afterShipped.Time);
+		Assert.True(unshipped.Time < afterUnshipped.Time);
 	}
 
 	[Fact]
-	public void GeneratesUnshippedApiFileWithOnlyRemovedApis()
+	public void GeneratesUnshippedApiFile_WithOnlyRemovedApis()
 	{
 		CopyTestFiles("Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll");
-		WriteFile("PublicAPI.Unshipped.txt", "#nullable enable");
+		var unshipped = WritePublicApi("PublicAPI.Unshipped.txt", "#nullable enable");
 
 		// Create a shipped file with APIs that don't exist in the current assembly
 		var shippedApis =
@@ -144,16 +164,13 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 			Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Sad.Sad() -> void
 			Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Sad.SadMethod() -> string!
 			""";
-		WriteFile("PublicAPI.Shipped.txt", shippedApis);
-
-		var unshippedPath = Path.Combine(DestinationDirectory, "PublicAPI.Unshipped.txt");
+		var shipped = WritePublicApi("PublicAPI.Shipped.txt", shippedApis);
 
 		var task = GetNewTask();
 		var success = task.Execute();
 
 		Assert.True(success, $"{task.GetType()}.Execute() failed.");
 
-		var actualContent = File.ReadAllText(unshippedPath);
 		var expectedContent =
 			"""
 			#nullable enable
@@ -162,20 +179,26 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 			*REMOVED*Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Sad.SadMethod() -> string!
 
 			""";
+		var afterShipped = ReadPublicApi(shipped.Path);
+		var afterUnshipped = ReadPublicApi(unshipped.Path);
 
-		Output.WriteLine("Actual Unshipped API Content:");
-		Output.WriteLine(actualContent);
-		Output.WriteLine("Expected Unshipped API Content:");
-		Output.WriteLine(expectedContent);
+		{
+			Output.WriteLine("Actual Unshipped API Content:");
+			Output.WriteLine(afterUnshipped.Content);
+			Output.WriteLine("Expected Unshipped API Content:");
+			Output.WriteLine(expectedContent);
+		}
 
-		Assert.Equal(expectedContent, actualContent);
+		Assert.Equal(expectedContent, afterUnshipped.Content);
+		Assert.Equal(shipped.Time, afterShipped.Time);
+		Assert.True(unshipped.Time < afterUnshipped.Time);
 	}
 
 	[Fact]
-	public void GeneratesUnshippedApiFileWithNewAndRemovedApis()
+	public void GeneratesUnshippedApiFile_WithNewAndRemovedApis()
 	{
 		CopyTestFiles("Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll");
-		WriteFile("PublicAPI.Unshipped.txt", "#nullable enable");
+		var unshipped = WritePublicApi("PublicAPI.Unshipped.txt", "#nullable enable");
 
 		// Create a shipped file with APIs that don't exist in the current assembly
 		var shippedApis =
@@ -185,16 +208,13 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 			Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Sad.Sad() -> void
 			Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Sad.SadMethod() -> string!
 			""";
-		WriteFile("PublicAPI.Shipped.txt", shippedApis);
-
-		var unshippedPath = Path.Combine(DestinationDirectory, "PublicAPI.Unshipped.txt");
+		var shipped = WritePublicApi("PublicAPI.Shipped.txt", shippedApis);
 
 		var task = GetNewTask();
 		var success = task.Execute();
 
 		Assert.True(success, $"{task.GetType()}.Execute() failed.");
 
-		var actualContent = File.ReadAllText(unshippedPath);
 		var expectedContent =
 			"""
 			#nullable enable
@@ -204,19 +224,25 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 			*REMOVED*Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Sad
 			*REMOVED*Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Sad.Sad() -> void
 			*REMOVED*Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Sad.SadMethod() -> string!
-			
+
 			""";
+		var afterShipped = ReadPublicApi(shipped.Path);
+		var afterUnshipped = ReadPublicApi(unshipped.Path);
 
-		Output.WriteLine("Actual Unshipped API Content:");
-		Output.WriteLine(actualContent);
-		Output.WriteLine("Expected Unshipped API Content:");
-		Output.WriteLine(expectedContent);
+		{
+			Output.WriteLine("Actual Unshipped API Content:");
+			Output.WriteLine(afterUnshipped.Content);
+			Output.WriteLine("Expected Unshipped API Content:");
+			Output.WriteLine(expectedContent);
+		}
 
-		Assert.Equal(expectedContent, actualContent);
+		Assert.Equal(expectedContent, afterUnshipped.Content);
+		Assert.Equal(shipped.Time, afterShipped.Time);
+		Assert.True(unshipped.Time < afterUnshipped.Time);
 	}
 
 	[Fact]
-	public void ErrorWhenNoAssemblyPropertyProvided()
+	public void Error_WhenNoAssemblyPropertyProvided()
 	{
 		WriteFile("PublicAPI.Shipped.txt", ExpectedFullApiContent);
 		WriteFile("PublicAPI.Unshipped.txt", "#nullable enable");
@@ -234,7 +260,7 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 	}
 
 	[Fact]
-	public void ErrorWhenNoPublicApiFilesProvided()
+	public void Error_WhenNoPublicApiFilesProvided()
 	{
 		CopyTestFiles("Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll");
 

@@ -44,13 +44,15 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 			}
 		}
 
-		protected void WriteFile(string fileName, string contents)
+		protected string WriteFile(string fileName, string contents)
 		{
 			if (!Directory.Exists(DestinationDirectory))
 				Directory.CreateDirectory(DestinationDirectory);
 
 			var filePath = Path.Combine(DestinationDirectory, fileName);
 			File.WriteAllText(filePath, contents);
+
+			return filePath;
 		}
 
 		// IBuildEngine
