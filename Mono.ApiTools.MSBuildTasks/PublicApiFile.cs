@@ -116,11 +116,19 @@ public class PublicApiFile
 		diff.HasNullableEnable = shippedPublicApiFile.HasNullableEnable;
 
 		// Find added APIs
-		var addedApis = publicApis.Except(shippedPublicApiFile.publicApis);
+		var addedApis = publicApis.Except(shippedPublicApiFile.publicApis, Comparer.Instance);
+
+		// Add the new APIs to the diff
 		diff.publicApis.AddRange(addedApis);
 
 		// Find removed APIs
-		var removedApis = shippedPublicApiFile.publicApis.Except(publicApis);
+		var removedApis = shippedPublicApiFile.publicApis.Except(publicApis, Comparer.Instance);
+
+		// In some cases, there may have been a transition from oblivious to nullable APIs
+		// so we have to also check for these
+		removedApis = removedApis.Except(nonNullablePublicApis, Comparer.Instance);
+
+		// Add the removed APIs to the diff with a prefix
 		diff.publicApis.AddRange(removedApis.Select(api => RemovedPrefix + api));
 
 		// Sort the public APIs
@@ -501,12 +509,18 @@ public class PublicApiFile
 		return default;
 	}
 
-	private class Comparer : IComparer<string>
+	private class Comparer : IComparer<string>, IEqualityComparer<string>
 	{
 		public static readonly Comparer Instance = new Comparer();
 
 		public int Compare(string? x, string? y) =>
 			StringComparer.Ordinal.Compare(WithoutPrefixes(x), WithoutPrefixes(y));
+
+		public bool Equals(string? x, string? y) =>
+			StringComparer.Ordinal.Equals(WithoutPrefixes(x), WithoutPrefixes(y));
+
+		public int GetHashCode(string obj) =>
+			WithoutPrefixes(obj).GetHashCode();
 
 		private static string WithoutPrefixes(string? api)
 		{
