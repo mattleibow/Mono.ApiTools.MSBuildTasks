@@ -279,12 +279,15 @@ public class PublicApiFile
 		return publicApiName;
 	}
 
-
 	private bool ShouldCollect(ISymbol symbol)
 	{
+		if (symbol.ToDisplayString().Contains("SomeMethod"))
+		{
+
+		}
 		// properties are not mapped, the get and set methods are used instead
-		if (symbol is IPropertySymbol)
-			return false;
+			if (symbol is IPropertySymbol)
+				return false;
 
 		if (symbol is IMethodSymbol methodSymbol)
 		{
@@ -301,10 +304,50 @@ public class PublicApiFile
 				return false;
 		}
 
-		return ShouldCollectRecursive(symbol);
+		// private or internal members, or members on private or internal types, should be skipped
+		if (!IsSymbolPublic(symbol))
+			return false;
+
+		// protected types or members inside a type that can never be extended, should be skipped
+		if (!IsProtectedSymbolExtendable(symbol))
+			return false;
+
+		return true;
 	}
 
-	public static bool ShouldCollectRecursive(ISymbol symbol)
+	private static bool IsProtectedSymbolExtendable(ISymbol symbol)
+	{
+		while (symbol != null)
+		{
+			if (symbol.DeclaredAccessibility is Accessibility.Protected or Accessibility.ProtectedOrInternal)
+			{
+				var containing = symbol.ContainingType;
+
+				// type is sealed, so can never be extended
+				if (containing.IsSealed)
+					return false;
+
+				var ctors = containing.GetMembers(WellKnownMemberNames.InstanceConstructorName);
+
+				// if there are no instance constructors, then the type is not extendable
+				if (ctors.Length == 0)
+					return false;
+
+				// check ctors for any public ones
+				foreach (var ctor in ctors)
+				{
+					if (IsSymbolDeclaredPublic(ctor))
+						return true;
+				}
+			}
+
+			symbol = symbol.ContainingType;
+		}
+
+		return true;
+	}
+
+	private static bool IsSymbolPublic(ISymbol symbol)
 	{
 		switch (symbol.Kind)
 		{
@@ -314,7 +357,7 @@ public class PublicApiFile
 
 			// parameters are only as visible as their containing symbol
 			case SymbolKind.Parameter:
-				return ShouldCollectRecursive(symbol.ContainingSymbol);
+				return IsSymbolPublic(symbol.ContainingSymbol);
 
 			// type parameters are private
 			case SymbolKind.TypeParameter:
@@ -323,21 +366,25 @@ public class PublicApiFile
 
 		while (symbol != null && symbol.Kind != SymbolKind.Namespace)
 		{
-			switch (symbol.DeclaredAccessibility)
-			{
-				// if anything is private or internal, then it is not collected
-				case Accessibility.NotApplicable:
-				case Accessibility.Private:
-				case Accessibility.Internal:
-				case Accessibility.ProtectedAndInternal:
-					return false;
-			}
+			if (!IsSymbolDeclaredPublic(symbol))
+				return false;
 
 			symbol = symbol.ContainingSymbol;
 		}
 
 		return true;
 	}
+
+	private static bool IsSymbolDeclaredPublic(ISymbol symbol) =>
+		symbol.DeclaredAccessibility switch
+		{
+			// if anything is private or internal, then it is not collected
+			Accessibility.NotApplicable or
+			Accessibility.Private or
+			Accessibility.Internal or
+			Accessibility.ProtectedAndInternal => false,
+			_ => true,
+		};
 
 	private static (bool IsOblivious, string Reason) IsOblivious(ISymbol symbol) =>
 		symbol switch

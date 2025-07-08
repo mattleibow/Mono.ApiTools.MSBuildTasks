@@ -298,6 +298,7 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing.Amazing() -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing.AmazingMethod() -> string!
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.BaseClassWithPrivateCtor
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.DelegateThing
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing.First = 0 -> Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
@@ -325,6 +326,9 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorProperty.get -> bool
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorProperty.set -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteRootClass() -> void
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.PublicDerivedClass
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.PublicDerivedClass.PublicDerivedClass() -> void
+		override Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.PublicDerivedClass.SomeMethod() -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.RecordClass() -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.RecordClass(Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass! original) -> void
@@ -397,6 +401,7 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 		virtual Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.EqualityContract.get -> System.Type!
 		virtual Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.Equals(Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass? other) -> bool
 		virtual Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.PrintMembers(System.Text.StringBuilder! builder) -> bool
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.SealedClass
 		""";
 
 	private const string TestPartialWithoutObliviousShippedApiContent = """
@@ -424,6 +429,7 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing.Amazing() -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing.AmazingMethod() -> string!
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.BaseClassWithPrivateCtor
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.DelegateThing
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing.First = 0 -> Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
@@ -442,6 +448,9 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorProperty.get -> bool
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorProperty.set -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteRootClass() -> void
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.PublicDerivedClass
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.PublicDerivedClass.PublicDerivedClass() -> void
+		override Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.PublicDerivedClass.SomeMethod() -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.RecordClass() -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.RecordClass(Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass! original) -> void
@@ -514,6 +523,7 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 		virtual Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.EqualityContract.get -> System.Type!
 		virtual Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.Equals(Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass? other) -> bool
 		virtual Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.PrintMembers(System.Text.StringBuilder! builder) -> bool
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.SealedClass
 		""";
 
 	private const string TestPartialShippedApiContent = """
@@ -538,6 +548,7 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.this[int index, string? name].get -> int
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.this[int index].get -> int
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.WithReferencing(in int inParam, ref int refParam, out int outParam) -> string?
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.BaseClassWithPrivateCtor
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.DelegateThing
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing.First = 0 -> Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
@@ -565,6 +576,9 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorProperty.get -> bool
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorProperty.set -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteRootClass() -> void
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.PublicDerivedClass
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.PublicDerivedClass.PublicDerivedClass() -> void
+		override Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.PublicDerivedClass.SomeMethod() -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.RecordClass() -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.RecordClass(Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass! original) -> void
@@ -637,5 +651,6 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 		virtual Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.EqualityContract.get -> System.Type!
 		virtual Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.Equals(Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass? other) -> bool
 		virtual Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.PrintMembers(System.Text.StringBuilder! builder) -> bool
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.SealedClass
 		""";
 }

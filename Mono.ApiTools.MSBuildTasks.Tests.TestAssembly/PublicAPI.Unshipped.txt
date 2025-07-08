@@ -22,6 +22,7 @@ Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.WithReferencing(in in
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing.Amazing() -> void
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing.AmazingMethod() -> string!
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.BaseClassWithPrivateCtor
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.DelegateThing
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing.First = 0 -> Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
@@ -49,6 +50,9 @@ Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorMet
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorProperty.get -> bool
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteErrorProperty.set -> void
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass.ObsoleteRootClass() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.PublicDerivedClass
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.PublicDerivedClass.PublicDerivedClass() -> void
+override Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.PublicDerivedClass.SomeMethod() -> void
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.RecordClass() -> void
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.RecordClass(Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass! original) -> void
@@ -121,3 +125,4 @@ virtual Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.<Clone>$() -> 
 virtual Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.EqualityContract.get -> System.Type!
 virtual Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.Equals(Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass? other) -> bool
 virtual Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RecordClass.PrintMembers(System.Text.StringBuilder! builder) -> bool
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.SealedClass

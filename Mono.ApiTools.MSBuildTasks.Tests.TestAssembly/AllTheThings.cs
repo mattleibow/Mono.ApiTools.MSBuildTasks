@@ -44,6 +44,25 @@ public class AllTheThings
 	}
 }
 
+public class SealedClass
+{
+	internal SealedClass() { }
+	
+	protected virtual void SomeMethod() => throw new NotImplementedException();
+}
+
+public class BaseClassWithPrivateCtor
+{
+	internal BaseClassWithPrivateCtor() { }
+	
+	protected virtual void SomeMethod() => throw new NotImplementedException();
+}
+
+public class PublicDerivedClass : BaseClassWithPrivateCtor
+{
+	protected override void SomeMethod() => throw new NotImplementedException();
+}
+
 internal class InternalClass
 {
 	public int InternalField;
