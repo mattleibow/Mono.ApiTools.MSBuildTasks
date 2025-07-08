@@ -18,6 +18,22 @@ An example use case is where an assembly is strong named and references a versio
 ```
 
 
+### GeneratePublicApiFiles
+
+This task will generate PublicAPI files from an assembly that can be used with the Microsoft.CodeAnalysis.PublicApiAnalyzers package.
+
+This is useful for creating baseline API files for libraries to track public API changes over time.
+
+```xml
+<GeneratePublicApiFiles
+    Assembly="input assembly item"
+    OutputDirectory="OPTIONAL directory where API files will be generated - defaults to assembly directory"
+    ShippedFileName="OPTIONAL name for shipped API file - defaults to PublicAPI.Shipped.txt"
+    UnshippedFileName="OPTIONAL name for unshipped API file - defaults to PublicAPI.Unshipped.txt"
+    GenerateShippedFile="OPTIONAL true to generate shipped file - defaults to true"
+    GenerateUnshippedFile="OPTIONAL true to generate unshipped file - defaults to false" />
+```
+
 ### RemoveObsoleteSymbols
 
 This task will remove obsolete types members from an assembly.
