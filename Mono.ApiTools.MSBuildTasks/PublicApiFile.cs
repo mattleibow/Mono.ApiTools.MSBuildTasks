@@ -172,6 +172,8 @@ public class PublicApiFile
 					if (newApi.StartsWith(ObliviousPrefix))
 						newApi = newApi.Substring(ObliviousPrefix.Length).Trim();
 
+					newApi = StripExperimentalPrefix(newApi);
+
 					return newApi;
 				})
 				.OrderBy(api => api, StringComparer.Ordinal)
@@ -242,13 +244,51 @@ public class PublicApiFile
 
 	private void CollectSymbols(IAssemblySymbol assemblySymbol, ISymbol symbol)
 	{
-		var nonNullableApi = GetApiString(assemblySymbol, symbol, null, publicApiFormat);
+		var experimentName = GetExperimentName(symbol);
+
+		var nonNullableApi = GetApiString(assemblySymbol, symbol, experimentName, publicApiFormat);
 		if (!string.IsNullOrWhiteSpace(nonNullableApi))
 			nonNullablePublicApis.Add(nonNullableApi);
 
-		var nullableApi = GetApiString(assemblySymbol, symbol, null, publicApiFormatWithNullability);
+		var nullableApi = GetApiString(assemblySymbol, symbol, experimentName, publicApiFormatWithNullability);
 		if (!string.IsNullOrWhiteSpace(nullableApi))
 			nullablePublicApis.Add(nullableApi);
+	}
+
+	private static string? GetExperimentName(ISymbol symbol)
+	{
+		for (var current = symbol; current is not null; current = current.ContainingSymbol)
+		{
+			foreach (var attribute in current.GetAttributes())
+			{
+				if (attribute.AttributeClass is
+					{
+						Name: "ExperimentalAttribute",
+						ContainingNamespace:
+						{
+							Name: "CodeAnalysis",
+							ContainingNamespace:
+							{
+								Name: "Diagnostics",
+								ContainingNamespace:
+								{
+									Name: "System",
+									ContainingNamespace.IsGlobalNamespace: true
+								}
+							}
+						}
+					})
+				{
+					if (attribute.ConstructorArguments.Length != 1 ||
+						attribute.ConstructorArguments[0].Value is not string diagnosticId)
+						return "???";
+
+					return diagnosticId;
+				}
+			}
+		}
+
+		return null;
 	}
 
 	private string GetApiString(IAssemblySymbol assemblySymbol, ISymbol symbol, string? experimentName, SymbolDisplayFormat format)
@@ -509,6 +549,18 @@ public class PublicApiFile
 		return default;
 	}
 
+	private static string StripExperimentalPrefix(string api)
+	{
+		if (api.Length > 0 && api[0] == '[')
+		{
+			var closeBracket = api.IndexOf(']');
+			if (closeBracket > 0)
+				api = api.Substring(closeBracket + 1);
+		}
+
+		return api;
+	}
+
 	private class Comparer : IComparer<string>, IEqualityComparer<string>
 	{
 		public static readonly Comparer Instance = new Comparer();
@@ -532,6 +584,8 @@ public class PublicApiFile
 
 			if (api.StartsWith(ObliviousPrefix))
 				api = api.Substring(ObliviousPrefix.Length);
+
+			api = StripExperimentalPrefix(api);
 
 			return api;
 		}

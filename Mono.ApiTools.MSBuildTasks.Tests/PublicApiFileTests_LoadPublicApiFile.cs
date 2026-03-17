@@ -192,4 +192,52 @@ public class PublicApiFileTests_LoadPublicApiFile
         Assert.Equal(["AType", "BType", "CType"], apiFile.PublicApis);
         Assert.True(apiFile.HasNullableEnable);
     }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ParsesLinesCorrectly_WithExperimentalPrefix(bool preserveRemovedItems)
+    {
+        // Arrange
+        var path = CreateTempFile(
+        [
+            "#nullable enable",
+            "[TEST001]MyType",
+            "[TEST001]MyType.MyMethod() -> void",
+            "NormalType",
+        ]);
+        var apiFile = new PublicApiFile();
+
+        // Act
+        apiFile.LoadPublicApiFile(path, preserveRemovedItems: preserveRemovedItems);
+
+        // Assert
+        Assert.True(apiFile.HasNullableEnable);
+        Assert.Contains("[TEST001]MyType", apiFile.PublicApis);
+        Assert.Contains("[TEST001]MyType.MyMethod() -> void", apiFile.PublicApis);
+        Assert.Contains("NormalType", apiFile.PublicApis);
+        Assert.Equal(3, apiFile.Count);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void SortsExperimentalEntries_BySymbolName(bool preserveRemovedItems)
+    {
+        // Arrange: experimental prefix should be ignored for sorting purposes
+        var path = CreateTempFile(
+        [
+            "#nullable enable",
+            "ZType",
+            "[TEST001]AType",
+            "MType",
+        ]);
+        var apiFile = new PublicApiFile();
+
+        // Act
+        apiFile.LoadPublicApiFile(path, preserveRemovedItems: preserveRemovedItems);
+
+        // Assert: sorted by symbol name, not by prefix
+        Assert.Equal(["[TEST001]AType", "MType", "ZType"], apiFile.PublicApis);
+    }
 }

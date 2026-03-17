@@ -98,4 +98,26 @@ public class PublicApiFileTests_IsEquivalentTo
         // Act & Assert
         Assert.False(file1.IsEquivalentTo(file2));
     }
+
+    [Fact]
+    public void IsEquivalentTo_ExperimentalPrefix_IgnoredInComparison()
+    {
+        // Arrange
+        var file1 = CreateFromLines(["#nullable enable", "A", "B", "C"]);
+        var file2 = CreateFromLines(["#nullable enable", "A", "[TEST001]B", "C"]);
+
+        // Act & Assert
+        Assert.True(file1.IsEquivalentTo(file2));
+    }
+
+    [Fact]
+    public void IsEquivalentTo_ObliviousAndExperimentalPrefix_IgnoredInComparison()
+    {
+        // Arrange
+        var file1 = CreateFromLines(["#nullable enable", "A", "B", "C"]);
+        var file2 = CreateFromLines(["#nullable enable", "A", "~[TEST001]B", "C"]);
+
+        // Act & Assert
+        Assert.True(file1.IsEquivalentTo(file2));
+    }
 }
