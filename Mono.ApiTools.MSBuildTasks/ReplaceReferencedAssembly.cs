@@ -1,6 +1,7 @@
 ﻿using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using Mono.Cecil;
+using System;
 using System.IO;
 using System.Linq;
 
@@ -33,13 +34,13 @@ namespace Mono.ApiTools.MSBuildTasks
 				AssemblyResolver = resolver
 			});
 
-			using var refAssembly = AssemblyDefinition.ReadAssembly(NewReference.ItemSpec);
-
 			var mainRefs = mainAssembly.MainModule.AssemblyReferences;
-			var mainReference = mainRefs.FirstOrDefault(r => r.Name == ReferencedAssemblyName);
+			var mainReference = mainRefs.FirstOrDefault(r => r.Name.Equals(ReferencedAssemblyName, StringComparison.OrdinalIgnoreCase));
 
 			if (mainReference != null)
 			{
+				using var refAssembly = AssemblyDefinition.ReadAssembly(NewReference.ItemSpec);
+
 				if (mainReference.FullName != refAssembly.FullName)
 				{
 					Log.LogMessage($"Updating assembly reference {mainReference.Name} from {mainReference.FullName} to {refAssembly.FullName}.");
@@ -61,7 +62,7 @@ namespace Mono.ApiTools.MSBuildTasks
 			}
 			else
 			{
-				Log.LogWarning($"Assembly {mainAssembly.Name.Name} did not reference {refAssembly.Name.Name}.");
+				Log.LogWarning($"Assembly {mainAssembly.Name.Name} did not reference {ReferencedAssemblyName}.");
 			}
 
 			return !Log.HasLoggedErrors;
