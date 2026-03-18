@@ -308,6 +308,51 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 		Assert.False(success, "Task should fail when no PublicAPI files are provided");
 	}
 
+	[Fact]
+	public void GeneratedOutput_MatchesAnalyzerValidatedPublicApiFile()
+	{
+		// The TestAssembly project has the Roslyn PublicApiAnalyzers package with WarningsAsErrors,
+		// which means its PublicAPI.Unshipped.txt is validated by the actual analyzer at build time.
+		// This test verifies our tool generates output that matches that analyzer-validated file,
+		// closing the loop between our generation and the analyzer's expectations.
+
+		CopyTestFiles("Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll");
+		var unshipped = WritePublicApi("PublicAPI.Unshipped.txt", "#nullable enable");
+		var shipped = WritePublicApi("PublicAPI.Shipped.txt", "#nullable enable");
+
+		var task = GetNewTask();
+		var success = task.Execute();
+
+		Assert.True(success, $"{task.GetType()}.Execute() failed.");
+
+		var afterUnshipped = ReadPublicApi(unshipped.Path);
+
+		// Read the analyzer-validated PublicAPI.Unshipped.txt from the TestAssembly project
+		var analyzerValidatedPath = Path.Combine(
+			AppContext.BaseDirectory, "..", "..", "..", "..",
+			"Mono.ApiTools.MSBuildTasks.Tests.TestAssembly",
+			"PublicAPI.Unshipped.txt");
+		var analyzerValidatedContent = File.ReadAllText(analyzerValidatedPath);
+
+		{
+			Output.WriteLine("Generated API Content:");
+			Output.WriteLine(afterUnshipped.Content);
+			Output.WriteLine("Analyzer-Validated API Content:");
+			Output.WriteLine(analyzerValidatedContent);
+		}
+
+		// Compare our generated output with what the real Roslyn analyzer has validated
+		var generatedFile = new PublicApiFile();
+		generatedFile.LoadUnshippedPublicApiFile(Path.Combine(DestinationDirectory, unshipped.Path));
+		var analyzerFile = new PublicApiFile();
+		analyzerFile.LoadUnshippedPublicApiFile(analyzerValidatedPath);
+
+		Assert.True(
+			generatedFile.IsEquivalentTo(analyzerFile),
+			"Generated output does not match the analyzer-validated PublicAPI.Unshipped.txt. " +
+			"This means our tool generates something different from what the Roslyn PublicApiAnalyzers expect.");
+	}
+
 	private const string ExpectedFullApiContent = """
 		#nullable enable
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings
@@ -334,10 +379,21 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing.Amazing() -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing.AmazingMethod() -> string!
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.BaseClassWithPrivateCtor
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ClassWithExperimentalMembers
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ClassWithExperimentalMembers.ClassWithExperimentalMembers() -> void
+		[TEST002]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ClassWithExperimentalMembers.ExperimentalMethod() -> void
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ClassWithExperimentalMembers.NormalMethod() -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.DelegateThing
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing.First = 0 -> Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing.Second = 1 -> Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
+		[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass
+		[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass.ExperimentalClass() -> void
+		[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass.ExperimentalEvent -> System.EventHandler?
+		[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass.ExperimentalMethod() -> string!
+		[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass.ExperimentalProperty.get -> bool
+		[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass.ExperimentalProperty.set -> void
+		[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass.NormalField -> int
 		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.IObliviousGenericInterface<T>
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass.ObliviousClass() -> void
@@ -465,10 +521,21 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing.Amazing() -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing.AmazingMethod() -> string!
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.BaseClassWithPrivateCtor
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ClassWithExperimentalMembers
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ClassWithExperimentalMembers.ClassWithExperimentalMembers() -> void
+		[TEST002]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ClassWithExperimentalMembers.ExperimentalMethod() -> void
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ClassWithExperimentalMembers.NormalMethod() -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.DelegateThing
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing.First = 0 -> Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing.Second = 1 -> Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
+		[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass
+		[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass.ExperimentalClass() -> void
+		[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass.ExperimentalEvent -> System.EventHandler?
+		[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass.ExperimentalMethod() -> string!
+		[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass.ExperimentalProperty.get -> bool
+		[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass.ExperimentalProperty.set -> void
+		[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass.NormalField -> int
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorEvent -> System.EventHandler?
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass.ObsoleteErrorField -> bool
@@ -584,10 +651,21 @@ public class GeneratePublicApiFilesTests : MSBuildTaskTestFixture<GeneratePublic
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.this[int index].get -> int
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AllTheThings.WithReferencing(in int inParam, ref int refParam, out int outParam) -> string?
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.BaseClassWithPrivateCtor
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ClassWithExperimentalMembers
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ClassWithExperimentalMembers.ClassWithExperimentalMembers() -> void
+		[TEST002]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ClassWithExperimentalMembers.ExperimentalMethod() -> void
+		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ClassWithExperimentalMembers.NormalMethod() -> void
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.DelegateThing
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing.First = 0 -> Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing.Second = 1 -> Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
+		[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass
+		[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass.ExperimentalClass() -> void
+		[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass.ExperimentalEvent -> System.EventHandler?
+		[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass.ExperimentalMethod() -> string!
+		[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass.ExperimentalProperty.get -> bool
+		[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass.ExperimentalProperty.set -> void
+		[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass.NormalField -> int
 		~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.IObliviousGenericInterface<T>
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass
 		Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass.ObliviousClass() -> void

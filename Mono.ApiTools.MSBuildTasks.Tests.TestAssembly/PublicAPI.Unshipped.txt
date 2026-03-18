@@ -23,10 +23,21 @@ Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing.Amazing() -> void
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing.AmazingMethod() -> string!
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.BaseClassWithPrivateCtor
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ClassWithExperimentalMembers
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ClassWithExperimentalMembers.ClassWithExperimentalMembers() -> void
+[TEST002]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ClassWithExperimentalMembers.ExperimentalMethod() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ClassWithExperimentalMembers.NormalMethod() -> void
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.DelegateThing
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing.First = 0 -> Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing.Second = 1 -> Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumThing
+[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass
+[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass.ExperimentalClass() -> void
+[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass.ExperimentalEvent -> System.EventHandler?
+[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass.ExperimentalMethod() -> string!
+[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass.ExperimentalProperty.get -> bool
+[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass.ExperimentalProperty.set -> void
+[TEST001]Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ExperimentalClass.NormalField -> int
 ~Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.IObliviousGenericInterface<T>
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass
 Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObliviousClass.ObliviousClass() -> void
