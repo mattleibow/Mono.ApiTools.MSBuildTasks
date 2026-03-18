@@ -27,7 +27,7 @@ jobs:
     - name: Pack NuGets
       shell: pwsh
       run: |
-        $VERSION = $env:GITHUB_REF.Substring($env:GITHUB_REF.LastIndexOf('/') + 1)
+        $VERSION = $env:GITHUB_REF.Substring($env:GITHUB_REF.LastIndexOf('/') + 1).TrimStart('v')
         echo "PACKAGE VERSION: $VERSION"
         dotnet pack Mono.ApiTools.MSBuildTasks/Mono.ApiTools.MSBuildTasks.csproj --configuration ${{ env.CONFIGURATION }} -p:PackageVersion=$VERSION
     - name: Upload NuGet artifacts
