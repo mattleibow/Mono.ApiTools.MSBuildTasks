@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace Mono.ApiTools.MSBuildTasks
 {
-	public class AdjustReferencedAssemblyVersion : Task
+	public class AdjustReferencedAssemblyVersion : Microsoft.Build.Utilities.Task
 	{
 		[Required]
 		public ITaskItem Assembly { get; set; } = null!;

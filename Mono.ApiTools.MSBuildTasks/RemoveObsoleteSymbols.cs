@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace Mono.ApiTools.MSBuildTasks
 {
-	public class RemoveObsoleteSymbols : Task
+	public class RemoveObsoleteSymbols : Microsoft.Build.Utilities.Task
 	{
 		// special obsolete messages:
 		// https://github.com/dotnet/roslyn/blob/891584232dc8112f33376e9ee9486051a1014b24/src/Compilers/Core/Portable/MetadataReader/PEModule.cs#L1192-L1193

@@ -1,0 +1,4 @@
+#nullable enable
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AmazingImplementation
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AmazingImplementation.AmazingImplementation() -> void
+Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.AmazingImplementation.AmazingMethod() -> string!

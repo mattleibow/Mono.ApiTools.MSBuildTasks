@@ -1,11 +1,17 @@
 using Microsoft.Build.Utilities;
 using System.IO;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Mono.ApiTools.MSBuildTasks.Tests
 {
 	public class AdjustReferencedAssemblyVersionTests : MSBuildTaskTestFixture<AdjustReferencedAssemblyVersion>
 	{
+		public AdjustReferencedAssemblyVersionTests(ITestOutputHelper output, string testContextDirectory = null)
+			: base(output, testContextDirectory)
+		{
+		}
+
 		protected AdjustReferencedAssemblyVersion GetNewTask(string assembly, string referenced) =>
 			new()
 			{

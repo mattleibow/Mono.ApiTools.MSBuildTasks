@@ -17,4 +17,8 @@
 		AssemblyFile="$(_MonoApiToolsMSBuildTasksTaskAssemblyName)"
 		TaskName="Mono.ApiTools.MSBuildTasks.ReplaceReferencedAssembly" />
 
+	<UsingTask
+		AssemblyFile="$(_MonoApiToolsMSBuildTasksTaskAssemblyName)"
+		TaskName="Mono.ApiTools.MSBuildTasks.GeneratePublicApiFiles" />
+
 </Project>

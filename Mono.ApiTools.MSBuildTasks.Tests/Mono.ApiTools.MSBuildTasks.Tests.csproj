@@ -1,22 +1,26 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
+		<TargetFramework>net9.0</TargetFramework>
 		<IsPackable>false</IsPackable>
+		<IsTestProject>true</IsTestProject>
+		<RollForward>LatestMajor</RollForward>
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
-		<PackageReference Include="xunit" Version="2.7.0" />
-		<PackageReference Include="xunit.runner.visualstudio" Version="2.5.7">
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+		<PackageReference Include="xunit" Version="2.9.2" />
+		<PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
-		<PackageReference Include="coverlet.collector" Version="6.0.1">
+		<PackageReference Include="coverlet.collector" Version="6.0.2">
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
 		<PackageReference Include="Mono.Cecil" Version="0.11.5" />
+		<PackageReference Include="Microsoft.CodeAnalysis" Version="4.10.0" />
 		<PackageReference Include="Microsoft.Build.Framework" Version="17.9.5" />
 		<PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.9.5" />
 	</ItemGroup>
@@ -38,5 +42,9 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Mono.ApiTools.MSBuildTasks\Mono.ApiTools.MSBuildTasks.csproj" />
 	</ItemGroup>
+
+	<Target Name="CopyFrameworkAssemblies" AfterTargets="Build">
+		<Copy SourceFiles="@(ReferencePathWithRefAssemblies)" DestinationFolder="$(OutputPath)TestRefAssemblies" SkipUnchangedFiles="true" />
+	</Target>
 
 </Project>
