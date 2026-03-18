@@ -83,5 +83,45 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 			Assert.Contains("to Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Good, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null", LogMessageEvents[0].Message);
 			Assert.Equal("New reference is Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Good, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null.", LogMessageEvents[1].Message);
 		}
+
+		[Fact]
+		public void MatchesReferenceName_CaseInsensitively()
+		{
+			CopyTestFiles(
+				"Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll",
+				"Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Bad.dll",
+				"Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Good.dll");
+
+			// Use differently-cased reference name
+			var task = GetNewTask(
+				"Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll",
+				"mono.apitools.msbuildtasks.tests.testassembly.bad",
+				"Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Good.dll");
+			var success = task.Execute();
+
+			Assert.True(success, $"{task.GetType()}.Execute() failed.");
+
+			Assert.Equal(2, LogMessageEvents.Count);
+			Assert.Contains("Updating assembly reference", LogMessageEvents[0].Message);
+		}
+
+		[Fact]
+		public void WarningMessage_UsesSearchedName_WhenReferenceNotFound()
+		{
+			CopyTestFiles(
+				"Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll",
+				"Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Bad.dll");
+
+			var task = GetNewTask(
+				"Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll",
+				"NonExistent.Assembly",
+				"Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Bad.dll");
+			var success = task.Execute();
+
+			Assert.True(success, $"{task.GetType()}.Execute() failed.");
+
+			Assert.Single(LogWarningEvents);
+			Assert.Contains("NonExistent.Assembly", LogWarningEvents[0].Message);
+		}
 	}
 }

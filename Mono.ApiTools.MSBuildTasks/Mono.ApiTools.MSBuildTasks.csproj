@@ -23,6 +23,7 @@
 		<PackageProjectUrl>https://github.com/mattleibow/Mono.ApiTools.MSBuildTasks</PackageProjectUrl>
 		<PackageReleaseNotes>See: https://github.com/mattleibow/Mono.ApiTools.MSBuildTasks/releases/v$(PackageVersion)</PackageReleaseNotes>
 		<NeutralLanguage>en</NeutralLanguage>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -44,6 +45,7 @@
 		<None Include="$(TargetPath)" Visible="False" Pack="True" PackagePath="buildTransitive" />
 		<None Include="$(TargetDir)$(TargetName).pdb" Visible="False" Pack="True" PackagePath="buildTransitive" />
 		<None Include="Mono.ApiTools.MSBuildTasks.targets" Pack="True" PackagePath="buildTransitive" CopyToOutputDirectory="PreserveNewest" />
+		<None Include="README.md" Pack="True" PackagePath="" />
 	</ItemGroup>
 
 	<Import Project="..\ILRepack.targets" Condition="'$(Configuration)' == 'Release'" />
