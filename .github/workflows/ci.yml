@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  BASE_VERSION: '0.5.0'
+  CONFIGURATION: 'release'
+  BUILD_PRERELEASE: 'true'
+  DOTNET_VERSION: '9.x'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore .NET tools
+        run: dotnet tool restore
+
+      - name: Build, pack and test
+        run: dotnet cake --configuration="${{ env.CONFIGURATION }}" --packageVersion="${{ env.BASE_VERSION }}.${{ github.run_number }}" --prerelease="${{ env.BUILD_PRERELEASE }}"
+
+      - name: Upload NuGet artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget
+          path: artifacts/package/release
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: 'Mono.ApiTools.*.Tests/**/*.trx'
