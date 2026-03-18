@@ -2,68 +2,95 @@
 
 MSBuild tasks to help with adjusting .NET assemblies during a build.
 
-## Features
+## ⚡ Quick Start
 
-This package provides four powerful MSBuild tasks for assembly manipulation:
-
-### 🔧 **AdjustReferencedAssemblyVersion**
-Update assembly reference versions to match your build dependencies.
-
-```xml
-<AdjustReferencedAssemblyVersion
-    Assembly="YourAssembly.dll"
-    ReferencedAssembly="ReferencedAssembly.dll"
-    OutputAssembly="YourAssembly.dll" />
+```
+dotnet add package Mono.ApiTools.MSBuildTasks
 ```
 
-### 📄 **GeneratePublicApiFiles**
-Generate PublicAPI files compatible with Microsoft.CodeAnalysis.PublicApiAnalyzers for API change tracking.
+Then use the tasks in your MSBuild project files (`.csproj`, `.targets`, etc.).
+
+## Features
+
+### 📄 GeneratePublicApiFiles
+
+Generate `PublicAPI.Shipped.txt` and `PublicAPI.Unshipped.txt` files compatible with
+[Microsoft.CodeAnalysis.PublicApiAnalyzers](https://www.nuget.org/packages/Microsoft.CodeAnalysis.PublicApiAnalyzers)
+for tracking API surface changes. Supports nullable annotations, oblivious markers, and
+`[Experimental]` attribute prefixes.
 
 ```xml
 <GeneratePublicApiFiles
-    Assembly="YourLibrary.dll"
-    OutputDirectory="$(MSBuildProjectDirectory)"
-    GenerateShippedFile="true" />
+    Assembly="$(OutputPath)YourLibrary.dll"
+    Files="@(PublicApiFiles)"
+    ReferenceSearchPaths="@(ReferencePath->'%(RootDir)%(Directory)')" />
 ```
 
-### 🧹 **RemoveObsoleteSymbols**
-Clean up obsolete members from reference assemblies while preserving them in the main assembly.
+| Property | Required | Description |
+|----------|----------|-------------|
+| `Assembly` | ✅ | The assembly to generate public API files from |
+| `Files` | ✅ | The `PublicAPI.Shipped.txt` and `PublicAPI.Unshipped.txt` file items |
+| `ReferenceSearchPaths` | | Directories to search for assembly dependencies |
+
+### 🧹 RemoveObsoleteSymbols
+
+Remove `[Obsolete]` types and members from assemblies — useful for cleaning up reference assemblies.
 
 ```xml
 <RemoveObsoleteSymbols
-    Assembly="YourAssembly.dll"
+    Assembly="$(OutputPath)YourAssembly.dll"
     OnlyErrors="true"
-    OutputAssembly="YourAssembly.ref.dll" />
+    OutputAssembly="$(OutputPath)YourAssembly.ref.dll" />
 ```
 
-### 🔄 **ReplaceReferencedAssembly**
-Replace assembly references with different versions or implementations.
+| Property | Required | Description |
+|----------|----------|-------------|
+| `Assembly` | ✅ | The assembly to scan |
+| `OnlyErrors` | | Only remove `[Obsolete("...", true)]` error members (default: `true`) |
+| `OutputAssembly` | | Output path; defaults to modifying the input assembly in place |
+
+### 🔧 AdjustReferencedAssemblyVersion
+
+Update an assembly reference version to match the actual referenced assembly — useful for
+strong-named assemblies that need version alignment.
+
+```xml
+<AdjustReferencedAssemblyVersion
+    Assembly="$(OutputPath)YourAssembly.dll"
+    ReferencedAssembly="$(OutputPath)Dependency.dll" />
+```
+
+| Property | Required | Description |
+|----------|----------|-------------|
+| `Assembly` | ✅ | The assembly to modify |
+| `ReferencedAssembly` | ✅ | The reference assembly providing the correct version |
+| `OutputAssembly` | | Output path; defaults to modifying the input assembly in place |
+
+### 🔄 ReplaceReferencedAssembly
+
+Replace one assembly reference with another entirely — name, version, public key token and all.
 
 ```xml
 <ReplaceReferencedAssembly
-    Assembly="YourAssembly.dll"
-    ReferencedAssemblyName="OldReference"
-    NewReference="NewReference.dll" />
+    Assembly="$(OutputPath)YourAssembly.dll"
+    ReferencedAssemblyName="OldDependency"
+    NewReference="$(OutputPath)NewDependency.dll" />
 ```
 
-## Getting Started
-
-1. Install the package:
-   ```
-   dotnet add package Mono.ApiTools.MSBuildTasks
-   ```
-
-2. Use the tasks in your MSBuild project files (.csproj, .targets, etc.)
-
-3. All tasks support optional `OutputAssembly` parameter - if not specified, the original assembly will be modified in place.
+| Property | Required | Description |
+|----------|----------|-------------|
+| `Assembly` | ✅ | The assembly to modify |
+| `ReferencedAssemblyName` | ✅ | Name of the existing reference to replace |
+| `NewReference` | ✅ | The new reference assembly |
+| `OutputAssembly` | | Output path; defaults to modifying the input assembly in place |
 
 ## Common Use Cases
 
-- **Strong-named assemblies**: Update reference versions without recompiling
-- **API surface management**: Generate and maintain PublicAPI files for libraries
-- **Reference assemblies**: Remove obsolete symbols from contract assemblies
-- **Assembly binding**: Redirect references to different assembly versions
+- **API surface management** — Generate and maintain PublicAPI files for library versioning
+- **Reference assemblies** — Remove obsolete symbols from contract assemblies
+- **Strong-named assemblies** — Align reference versions without recompiling
+- **Assembly binding** — Redirect references to different assembly implementations
 
 ---
 
-📖 For detailed documentation and examples, visit the [GitHub repository](https://github.com/mattleibow/Mono.ApiTools.MSBuildTasks).
+📖 [GitHub Repository](https://github.com/mattleibow/Mono.ApiTools.MSBuildTasks) · MIT License
