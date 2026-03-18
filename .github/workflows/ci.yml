@@ -1,44 +1,63 @@
 name: CI
 
 on:
+  pull_request:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
-  BASE_VERSION: '0.5.0'
-  CONFIGURATION: 'release'
-  BUILD_PRERELEASE: 'true'
   DOTNET_VERSION: '9.x'
+  CONFIGURATION: 'release'
 
 jobs:
+
   build:
+    name: Build
     runs-on: windows-latest
-
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    - run: dotnet tool restore
+    - run: dotnet build Mono.ApiTools.MSBuildTasks.sln --configuration ${{ env.CONFIGURATION }}
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+  test:
+    name: Test
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    - run: dotnet tool restore
+    - run: dotnet test Mono.ApiTools.MSBuildTasks.Tests/Mono.ApiTools.MSBuildTasks.Tests.csproj --configuration ${{ env.CONFIGURATION }} --logger trx
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: '**/*.trx'
 
-      - name: Restore .NET tools
-        run: dotnet tool restore
-
-      - name: Build, pack and test
-        run: dotnet cake --configuration="${{ env.CONFIGURATION }}" --packageVersion="${{ env.BASE_VERSION }}.${{ github.run_number }}" --prerelease="${{ env.BUILD_PRERELEASE }}"
-
-      - name: Upload NuGet artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: nuget
-          path: artifacts/package/release
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-results
-          path: 'Mono.ApiTools.*.Tests/**/*.trx'
+  pack:
+    name: Pack
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    - run: dotnet tool restore
+    - run: dotnet pack Mono.ApiTools.MSBuildTasks/Mono.ApiTools.MSBuildTasks.csproj --configuration ${{ env.CONFIGURATION }} -p:PackageVersion=0.999.0-ci.${{ github.run_id }}
+    - name: Upload NuGet artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget
+        path: artifacts/package/release
