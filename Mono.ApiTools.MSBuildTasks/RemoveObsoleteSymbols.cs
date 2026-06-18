@@ -133,8 +133,7 @@ namespace Mono.ApiTools.MSBuildTasks
 		// Removes a property together with its accessor methods (get_/set_ and any other methods)
 		// and the compiler-generated backing field of an auto-property. Cecil stores accessors and
 		// backing fields in the type independently of the property metadata, so removing only the
-		// property would leave orphan members behind (and, when the property type is itself being
-		// removed, a dangling reference that the metadata writer cannot emit).
+		// property would leave these related members orphaned behind it.
 		private int RemoveProperty(TypeDefinition type, PropertyDefinition property)
 		{
 			Log.LogMessage($"Removing property '{property.FullName}'...");

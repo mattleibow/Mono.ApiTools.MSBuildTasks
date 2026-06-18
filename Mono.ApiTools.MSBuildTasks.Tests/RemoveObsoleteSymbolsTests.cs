@@ -57,9 +57,8 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 				// ObsoleteErrorRootClass
 				"type 'Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass'",
 				// ObsoleteErrorEnum (a top-level obsolete-error enum) and the error-obsolete members
-				// of EnumConsumer that reference it. The property's compiler-generated backing field
-				// is of the removed enum type, so cleaning it up (not shown here) is what keeps Cecil
-				// able to write the assembly back out.
+				// of EnumConsumer that use it; the property's accessors and backing field are removed
+				// alongside it.
 				"type 'Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorEnum'",
 				"property 'Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorEnum Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumConsumer::ErrorProperty()'",
 				"method 'Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorEnum Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumConsumer::ErrorMethod(Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorEnum)'",
@@ -181,15 +180,15 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 		}
 
 		[Fact]
-		public void RemovesObsoleteErrorEnumTypeWithoutCrashing()
+		public void RemovesObsoleteErrorEnumAndWritesValidAssembly()
 		{
 			CopyTestFiles("Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll");
 
 			var task = GetNewTask("Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll", true);
 
-			// Removing a top-level [Obsolete(error: true)] enum used to crash the Cecil writer
-			// ("declared in another module") because the obsolete auto-property left its backing
-			// field referencing the now-removed enum. Cleaning the backing field up fixes it.
+			// Removing an [Obsolete(error: true)] enum also removes the obsolete members that use it,
+			// along with their accessors and backing fields, so nothing is left behind that still
+			// mentions the enum and the assembly can be written back out.
 			var success = task.Execute();
 
 			Assert.True(success, $"{task.GetType()}.Execute() failed.");

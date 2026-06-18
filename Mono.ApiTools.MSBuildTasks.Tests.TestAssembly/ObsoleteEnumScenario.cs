@@ -2,14 +2,14 @@ using System;
 
 namespace Mono.ApiTools.MSBuildTasks.Tests.TestAssembly
 {
-	// A top-level enum marked as an error-level obsolete. Because the enum is removed, the
-	// auto-property below would strand a reference to it (through its compiler-generated backing
-	// field) unless the property removal also cleans the backing field up — otherwise Cecil cannot
-	// write the assembly back out ("declared in another module").
+	// An error-level [Obsolete] enum together with a consumer whose obsolete members use it.
+	// When those obsolete members are removed, their compiler-generated artifacts (the property's
+	// accessors and backing field) are removed alongside them, so nothing is left behind that still
+	// mentions the enum and the enum itself can be removed too.
 	//
-	// Every member that consumes the enum is itself marked error-obsolete: using an
-	// [Obsolete(error: true)] type from a non-obsolete member is a compile error, so a well-formed
-	// assembly never references a removed-error type from a kept member.
+	// Every consuming member is itself error-obsolete on purpose: C# forbids a non-obsolete member
+	// from using an [Obsolete(error: true)] type, so a real assembly never has a kept member that
+	// depends on a removed error-obsolete type.
 	//
 	// These are intentionally internal: they exercise removal behaviour only and are not part of the
 	// public API surface validated by the PublicAPI analyzer.
