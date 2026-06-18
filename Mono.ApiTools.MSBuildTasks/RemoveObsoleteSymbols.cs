@@ -90,9 +90,7 @@ namespace Mono.ApiTools.MSBuildTasks
 			{
 				if (ShouldRemove(property))
 				{
-					Log.LogMessage($"Removing property '{property.FullName}'...");
-					type.Properties.Remove(property);
-					removed++;
+					removed += RemoveProperty(type, property);
 				}
 			}
 
@@ -110,9 +108,7 @@ namespace Mono.ApiTools.MSBuildTasks
 			{
 				if (ShouldRemove(evnt))
 				{
-					Log.LogMessage($"Removing event '{evnt.FullName}'...");
-					type.Events.Remove(evnt);
-					removed++;
+					removed += RemoveEvent(type, evnt);
 				}
 			}
 
@@ -132,6 +128,69 @@ namespace Mono.ApiTools.MSBuildTasks
 			}
 
 			return removed;
+		}
+
+		// Removes a property together with its accessor methods (get_/set_ and any other methods)
+		// and the compiler-generated backing field of an auto-property. Cecil stores accessors and
+		// backing fields in the type independently of the property metadata, so removing only the
+		// property would leave these related members orphaned behind it.
+		private int RemoveProperty(TypeDefinition type, PropertyDefinition property)
+		{
+			Log.LogMessage($"Removing property '{property.FullName}'...");
+			type.Properties.Remove(property);
+
+			RemoveAccessor(type, property.GetMethod, property.FullName);
+			RemoveAccessor(type, property.SetMethod, property.FullName);
+			foreach (var other in property.OtherMethods.ToArray())
+				RemoveAccessor(type, other, property.FullName);
+
+			RemoveBackingField(type, $"<{property.Name}>k__BackingField", property.FullName);
+
+			return 1;
+		}
+
+		// Removes an event together with its accessor methods (add_/remove_/raise_ and others) and,
+		// for a field-like event, the compiler-generated backing delegate field (which shares the
+		// event's name).
+		private int RemoveEvent(TypeDefinition type, EventDefinition evnt)
+		{
+			Log.LogMessage($"Removing event '{evnt.FullName}'...");
+			type.Events.Remove(evnt);
+
+			RemoveAccessor(type, evnt.AddMethod, evnt.FullName);
+			RemoveAccessor(type, evnt.RemoveMethod, evnt.FullName);
+			RemoveAccessor(type, evnt.InvokeMethod, evnt.FullName);
+			foreach (var other in evnt.OtherMethods.ToArray())
+				RemoveAccessor(type, other, evnt.FullName);
+
+			RemoveBackingField(type, evnt.Name, evnt.FullName, evnt.EventType);
+
+			return 1;
+		}
+
+		private void RemoveAccessor(TypeDefinition type, MethodDefinition? accessor, string owner)
+		{
+			if (accessor is null)
+				return;
+
+			if (type.Methods.Remove(accessor))
+				Log.LogMessage($"Removing accessor method '{accessor.FullName}' of '{owner}'...");
+		}
+
+		// Removes a compiler-generated backing field by name. The field is only removed when it is
+		// private (so a user-declared field is never touched) and, when a type is supplied, when its
+		// type matches — this keeps the field-like event match from removing an unrelated member.
+		private void RemoveBackingField(TypeDefinition type, string fieldName, string owner, TypeReference? expectedType = null)
+		{
+			var field = type.Fields.FirstOrDefault(f => f.Name == fieldName && f.IsPrivate);
+			if (field is null)
+				return;
+
+			if (expectedType is not null && field.FieldType.FullName != expectedType.FullName)
+				return;
+
+			if (type.Fields.Remove(field))
+				Log.LogMessage($"Removing backing field '{field.FullName}' of '{owner}'...");
 		}
 
 		private static readonly string ObsoleteAttribute = typeof(ObsoleteAttribute).FullName;

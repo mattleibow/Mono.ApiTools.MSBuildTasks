@@ -1,4 +1,5 @@
 using Microsoft.Build.Utilities;
+using Mono.Cecil;
 using System.IO;
 using System.Linq;
 using Xunit;
@@ -55,6 +56,13 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 				"event 'System.EventHandler Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass::ObsoleteErrorEvent'",
 				// ObsoleteErrorRootClass
 				"type 'Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass'",
+				// ObsoleteErrorEnum (a top-level obsolete-error enum) and the error-obsolete members
+				// of EnumConsumer that use it; the property's accessors and backing field are removed
+				// alongside it.
+				"type 'Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorEnum'",
+				"property 'Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorEnum Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumConsumer::ErrorProperty()'",
+				"method 'Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorEnum Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumConsumer::ErrorMethod(Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorEnum)'",
+				"field 'Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorEnum Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumConsumer::ErrorField'",
 			};
 
 			AssertRemovedMembers(removed);
@@ -102,6 +110,12 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 				"type 'Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteRootClass'",
 				// ObsoleteErrorRootClass
 				"type 'Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorRootClass'",
+				// ObsoleteErrorEnum (a top-level obsolete-error enum) and every obsolete EnumConsumer
+				// member that consumes it.
+				"type 'Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorEnum'",
+				"property 'Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorEnum Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumConsumer::ErrorProperty()'",
+				"method 'Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorEnum Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumConsumer::ErrorMethod(Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorEnum)'",
+				"field 'Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorEnum Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumConsumer::ErrorField'",
 			};
 
 			AssertRemovedMembers(removed);
@@ -112,7 +126,10 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 			var messages = LogMessageEvents
 				.Select(e => e.Message)
 				.Where(m => !m.StartsWith("Scanning assembly"))
-				.Where(m => !m.StartsWith($"Removed {removed.Length} obsolete symbols."))
+				.Where(m => m != $"Removed {removed.Length} obsolete symbols.")
+				.Where(m => !m.StartsWith("Removing accessor method"))
+				.Where(m => !m.StartsWith("Removing backing field"))
+				.Where(m => !m.Contains("k__BackingField"))
 				.Where(m => !m.StartsWith("Saving assembly"))
 				.ToArray();
 
@@ -122,6 +139,100 @@ namespace Mono.ApiTools.MSBuildTasks.Tests
 			{
 				Assert.Contains($"Removing {item}...", messages);
 			}
+		}
+
+		[Fact]
+		public void RemovesAccessorMethodsOfObsoleteProperties()
+		{
+			CopyTestFiles("Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll");
+
+			var task = GetNewTask("Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll", true);
+			var success = task.Execute();
+
+			Assert.True(success, $"{task.GetType()}.Execute() failed.");
+
+			using var assembly = AssemblyDefinition.ReadAssembly(
+				Path.Combine(DestinationDirectory, "Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll"));
+
+			var rootClass = assembly.MainModule.GetType("Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.RootClass");
+			var methodNames = rootClass.Methods.Select(m => m.Name).ToArray();
+			var fieldNames = rootClass.Fields.Select(f => f.Name).ToArray();
+
+			// The obsolete-error property is gone...
+			Assert.DoesNotContain(rootClass.Properties, p => p.Name == "ObsoleteErrorProperty");
+			// ...and so are its accessor methods (the bug was that these were left behind).
+			Assert.DoesNotContain("get_ObsoleteErrorProperty", methodNames);
+			Assert.DoesNotContain("set_ObsoleteErrorProperty", methodNames);
+			// ...and its compiler-generated backing field.
+			Assert.DoesNotContain("<ObsoleteErrorProperty>k__BackingField", fieldNames);
+
+			// The obsolete-error event and its accessor methods are gone too.
+			Assert.DoesNotContain(rootClass.Events, e => e.Name == "ObsoleteErrorEvent");
+			Assert.DoesNotContain("add_ObsoleteErrorEvent", methodNames);
+			Assert.DoesNotContain("remove_ObsoleteErrorEvent", methodNames);
+			// ...along with the field-like event's backing delegate field.
+			Assert.DoesNotContain("ObsoleteErrorEvent", fieldNames);
+
+			// Normal members and their accessors are untouched.
+			Assert.Contains(rootClass.Properties, p => p.Name == "NormalProperty");
+			Assert.Contains("get_NormalProperty", methodNames);
+			Assert.Contains("set_NormalProperty", methodNames);
+		}
+
+		[Fact]
+		public void RemovesObsoleteErrorEnumAndWritesValidAssembly()
+		{
+			CopyTestFiles("Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll");
+
+			var task = GetNewTask("Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll", true);
+
+			// Removing an [Obsolete(error: true)] enum also removes the obsolete members that use it,
+			// along with their accessors and backing fields, so nothing is left behind that still
+			// mentions the enum and the assembly can be written back out.
+			var success = task.Execute();
+
+			Assert.True(success, $"{task.GetType()}.Execute() failed.");
+			Assert.Empty(LogErrorEvents);
+
+			// The output assembly must be re-readable (i.e. it was written correctly).
+			using var assembly = AssemblyDefinition.ReadAssembly(
+				Path.Combine(DestinationDirectory, "Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll"));
+			Assert.DoesNotContain(
+				assembly.MainModule.GetTypes(),
+				t => t.FullName == "Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.ObsoleteErrorEnum");
+		}
+
+		[Fact]
+		public void RemovesEnumConsumerObsoleteMembersButKeepsUnrelated()
+		{
+			CopyTestFiles("Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll");
+
+			var task = GetNewTask("Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll", true);
+			Assert.True(task.Execute(), $"{task.GetType()}.Execute() failed.");
+
+			using var assembly = AssemblyDefinition.ReadAssembly(
+				Path.Combine(DestinationDirectory, "Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.dll"));
+			var module = assembly.MainModule;
+			var consumer = module.GetType("Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.EnumConsumer");
+			var methodNames = consumer.Methods.Select(m => m.Name).ToArray();
+			var fieldNames = consumer.Fields.Select(f => f.Name).ToArray();
+
+			// The error-obsolete members that consume the removed enum are gone, including the
+			// property's accessors and compiler-generated backing field.
+			Assert.DoesNotContain(consumer.Properties, p => p.Name == "ErrorProperty");
+			Assert.DoesNotContain("get_ErrorProperty", methodNames);
+			Assert.DoesNotContain("set_ErrorProperty", methodNames);
+			Assert.DoesNotContain("<ErrorProperty>k__BackingField", fieldNames);
+			Assert.DoesNotContain(consumer.Methods, m => m.Name == "ErrorMethod");
+			Assert.DoesNotContain(consumer.Fields, f => f.Name == "ErrorField");
+
+			// A non-obsolete member of the same type survives.
+			Assert.Contains(consumer.Properties, p => p.Name == "KeptProperty");
+
+			// Completely unrelated types are untouched.
+			var unrelated = module.GetType("Mono.ApiTools.MSBuildTasks.Tests.TestAssembly.Amazing");
+			Assert.NotNull(unrelated);
+			Assert.Contains(unrelated.Methods, m => m.Name == "AmazingMethod");
 		}
 	}
 }
