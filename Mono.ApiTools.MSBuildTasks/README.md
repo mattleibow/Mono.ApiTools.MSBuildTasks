@@ -49,6 +49,12 @@ Remove `[Obsolete]` types and members from assemblies — useful for cleaning up
 | `OnlyErrors` | | Only remove `[Obsolete("...", true)]` error members (default: `true`) |
 | `OutputAssembly` | | Output path; defaults to modifying the input assembly in place |
 
+When a property or event is removed, its underlying accessor methods (`get_`/`set_`, `add_`/`remove_`)
+and compiler-generated backing field are removed too, so no orphan members are left behind. Because
+the backing field is removed with the property, an obsolete type that is only consumed by obsolete
+members (such as an `[Obsolete]` enum) can be removed without leaving a dangling reference, so the
+resulting assembly is always valid.
+
 ### 🔧 AdjustReferencedAssemblyVersion
 
 Update an assembly reference version to match the actual referenced assembly — useful for
