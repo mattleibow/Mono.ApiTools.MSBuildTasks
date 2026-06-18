@@ -94,14 +94,6 @@ namespace Mono.ApiTools.MSBuildTasks
 				}
 			}
 
-			foreach (var evnt in type.Events.ToArray())
-			{
-				if (ShouldRemove(evnt))
-				{
-					removed += RemoveEvent(type, evnt);
-				}
-			}
-
 			foreach (var method in type.Methods.ToArray())
 			{
 				if (ShouldRemove(method))
@@ -109,6 +101,14 @@ namespace Mono.ApiTools.MSBuildTasks
 					Log.LogMessage($"Removing method '{method.FullName}'...");
 					type.Methods.Remove(method);
 					removed++;
+				}
+			}
+
+			foreach (var evnt in type.Events.ToArray())
+			{
+				if (ShouldRemove(evnt))
+				{
+					removed += RemoveEvent(type, evnt);
 				}
 			}
 
