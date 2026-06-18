@@ -40,11 +40,6 @@ This task will remove obsolete types members from an assembly.
 
 This is useful for removing items from reference assemblies. This will allow the main assembly to retain the obsolete members but will not be visible to the developer.
 
-Removing a property or event also removes its accessor methods (`get_`/`set_`, `add_`/`remove_`) and
-the compiler-generated backing field, so no orphan members are left behind. This also means an
-obsolete type used only by obsolete members (for example an `[Obsolete]` enum) can be removed
-cleanly, because the backing field that referenced it is removed along with the property.
-
 ```xml
 <RemoveObsoleteSymbols
     Assembly="input assembly item"
